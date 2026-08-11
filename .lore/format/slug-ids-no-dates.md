@@ -10,7 +10,9 @@ paths: [source/lib/schema.ts]
 
 ## Why
 
-El id aparece en cada línea del INDEX, que es el archivo que se lee en todas las sesiones. Sin fecha es más corto, se cita en un comentario o un PR sin parecer un timestamp, y la búsqueda es por tema.
+El id aparece en cada línea del INDEX, que es el archivo que se lee en todas las sesiones. Sin
+fecha es más corto, se cita en un comentario o un PR sin parecer un timestamp, y la búsqueda es
+por tema.
 
 ## Rejected
 

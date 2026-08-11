@@ -10,7 +10,9 @@ paths: [source/app.ts, source/cli.ts, source/commands/**]
 
 ## Why
 
-lore corre en cada sesión de agente y `lore for` va a correr en cada Edit si se engancha un hook. El arranque es una feature, no una preferencia: medido, 50ms contra los ~400ms que cuesta levantar React.
+lore corre en cada sesión de agente y `lore for` va a correr en cada Edit si se engancha un
+hook. El arranque es una feature, no una preferencia: medido, 50ms contra los ~400ms que cuesta
+levantar React.
 
 ## Rejected
 

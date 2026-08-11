@@ -211,7 +211,7 @@ export function serializeDecision(decision: Decision): string {
 		"",
 		"## Why",
 		"",
-		why.trim(),
+		wrapProse(why.trim()),
 		"",
 		"## Rejected",
 		"",
@@ -220,14 +220,61 @@ export function serializeDecision(decision: Decision): string {
 	].join("\n");
 }
 
+/**
+ * Reflow plain paragraphs to WRAP_WIDTH, leaving anything structured alone.
+ *
+ * A `why` typed at the prompt arrives pre-wrapped, but one sent by an agent over
+ * `--json` is a single 300-character line, and the PR diff is where lore is
+ * actually reviewed. Lists, quotes, headings and fenced code are passed through
+ * untouched — reflowing those would corrupt them.
+ */
+function wrapProse(text: string): string {
+	const out: string[] = [];
+	let paragraph: string[] = [];
+	let inFence = false;
+
+	const flush = () => {
+		if (paragraph.length === 0) return;
+		out.push(wrapWords(paragraph.join(" "), WRAP_WIDTH, ""));
+		paragraph = [];
+	};
+
+	for (const line of text.split("\n")) {
+		if (line.trimStart().startsWith("```")) {
+			flush();
+			inFence = !inFence;
+			out.push(line);
+			continue;
+		}
+		if (inFence || /^\s*(?:[-*+>#]|\d+\.)\s/.test(line) || /^\s{4,}\S/.test(line)) {
+			flush();
+			out.push(line);
+			continue;
+		}
+		if (line.trim() === "") {
+			flush();
+			out.push("");
+			continue;
+		}
+		paragraph.push(line.trim());
+	}
+	flush();
+	return out.join("\n");
+}
+
 /** Wrap a bullet at WRAP_WIDTH with a two-space hang, so PR diffs stay readable. */
 function wrapBullet(text: string): string {
-	const words = text.split(/\s+/);
+	return wrapWords(text, WRAP_WIDTH, "  ");
+}
+
+/** Greedy wrap with a hanging indent. Idempotent, so serializing stays a fixed point. */
+function wrapWords(text: string, width: number, hang: string): string {
+	const words = text.split(/\s+/).filter(Boolean);
 	const lines: string[] = [];
 	let current = "";
 	for (const word of words) {
 		const candidate = current ? `${current} ${word}` : word;
-		const limit = lines.length === 0 ? WRAP_WIDTH : WRAP_WIDTH - 2;
+		const limit = lines.length === 0 ? width : width - hang.length;
 		if (current && candidate.length > limit) {
 			lines.push(current);
 			current = word;
@@ -236,7 +283,7 @@ function wrapBullet(text: string): string {
 		}
 	}
 	if (current) lines.push(current);
-	return lines.map((line, index) => (index === 0 ? line : `  ${line}`)).join("\n");
+	return lines.map((line, index) => (index === 0 ? line : `${hang}${line}`)).join("\n");
 }
 
 /** Turn a `what` line into a candidate id. Callers still check it is unique. */

@@ -9,7 +9,9 @@ source: revisión del plan, punto 1
 
 ## Why
 
-Nadie abre un archivo superado, así que un estado terminal sin sucesora no protege a nadie. Dar de baja algo es decidir: se escribe su propia decisión y supersede a la vieja, lo que deja un invariante verificable — toda decisión retirada apunta a una viva.
+Nadie abre un archivo superado, así que un estado terminal sin sucesora no protege a nadie. Dar
+de baja algo es decidir: se escribe su propia decisión y supersede a la vieja, lo que deja un
+invariante verificable — toda decisión retirada apunta a una viva.
 
 ## Rejected
 

@@ -10,7 +10,8 @@ paths: [source/lib/index-file.ts]
 
 ## Why
 
-Con 200 decisiones el índice deja de ser barato y viola el principio rector. Lo que evita revivir algo descartado no es su archivo, es el `## Rejected` de la decisión que lo reemplazó.
+Con 200 decisiones el índice deja de ser barato y viola el principio rector. Lo que evita
+revivir algo descartado no es su archivo, es el `## Rejected` de la decisión que lo reemplazó.
 
 ## Rejected
 

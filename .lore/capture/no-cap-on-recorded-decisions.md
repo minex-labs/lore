@@ -9,7 +9,9 @@ source: revisión del cambio de alcance, ajuste al criterio
 
 ## Why
 
-Con el inbox, descartar una propuesta de más cuesta una tecla; una decisión no capturada se pierde para siempre. Un techo duro además mata decisiones legítimas de una sesión larga. La presión va por propuesta: source citable, alternativa nombrable, legible en 30 segundos.
+Con el inbox, descartar una propuesta de más cuesta una tecla; una decisión no capturada se
+pierde para siempre. Un techo duro además mata decisiones legítimas de una sesión larga. La
+presión va por propuesta: source citable, alternativa nombrable, legible en 30 segundos.
 
 ## Rejected
 

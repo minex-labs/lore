@@ -9,7 +9,9 @@ source: paso 6, hallazgo al diseñar harvest
 
 ## Why
 
-El material bueno está en Notion, Slack y sesiones viejas, pero el agente ya tiene esas integraciones con las credenciales del usuario. Lee la página con su MCP y pipea a `lore add --json`: la ingesta ya está resuelta por un esquema en stdin.
+El material bueno está en Notion, Slack y sesiones viejas, pero el agente ya tiene esas
+integraciones con las credenciales del usuario. Lee la página con su MCP y pipea a `lore add
+--json`: la ingesta ya está resuelta por un esquema en stdin.
 
 ## Rejected
 

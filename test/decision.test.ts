@@ -179,3 +179,39 @@ test("fromInput refuses input with no rejected options", () => {
 	assert.ok(!result.ok);
 	assert.ok(result.issues.some((issue) => issue.message.includes("name at least one option")));
 });
+
+test("a why sent as one long line is reflowed for the diff", () => {
+	const long = "Una razón ".repeat(40).trim();
+	const decision = expectOk(
+		SAMPLE.replace(/## Why\n\n[\s\S]*?\n\n## Rejected/, `## Why\n\n${long}\n\n## Rejected`),
+	);
+	const text = serializeDecision(decision);
+
+	for (const line of text.split("\n")) assert.ok(line.length <= 100, `too long: ${line}`);
+	assert.equal(serializeDecision(expectOk(text)), text, "reflowing must stay a fixed point");
+});
+
+test("structure inside why survives the reflow untouched", () => {
+	const body = [
+		"Un párrafo normal que es bastante largo y debería envolverse en algún punto porque supera el ancho.",
+		"",
+		"- una lista",
+		"- otra entrada de la lista que también es larguísima y no queremos que se reflowee nunca jamás",
+		"",
+		"```ts",
+		"const x = 1; // una línea de código muy larga que no se puede tocar sin romper el ejemplo entero",
+		"```",
+	].join("\n");
+	const decision = expectOk(
+		SAMPLE.replace(/## Why\n\n[\s\S]*?\n\n## Rejected/, `## Why\n\n${body}\n\n## Rejected`),
+	);
+	const text = serializeDecision(decision);
+
+	assert.match(text, /^- una lista$/m);
+	assert.match(
+		text,
+		/^- otra entrada de la lista que también es larguísima y no queremos que se reflowee nunca jamás$/m,
+	);
+	assert.match(text, /^const x = 1; \/\/ una línea de código muy larga/m);
+	assert.equal(serializeDecision(expectOk(text)), text);
+});

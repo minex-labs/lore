@@ -9,7 +9,9 @@ source: revisión del plan, punto 2
 
 ## Why
 
-El cuerpo lo escribe el dueño del repo, apurado, justo después de tomar la decisión. Forzarlo a un segundo idioma es exactamente la fricción que hace que uno deje de cargar decisiones. El `what` queda en inglés porque es lo que se lee en el índice.
+El cuerpo lo escribe el dueño del repo, apurado, justo después de tomar la decisión. Forzarlo a
+un segundo idioma es exactamente la fricción que hace que uno deje de cargar decisiones. El
+`what` queda en inglés porque es lo que se lee en el índice.
 
 ## Rejected
 

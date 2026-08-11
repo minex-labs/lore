@@ -23,8 +23,8 @@ más una tabla de índice mantenida a mano.
 
 ## Rejected
 
-- **DynamoDB** — access patterns rígidos: cada vista nueva del dashboard pedía un GSI nuevo. Lo
-  modelamos en el spike de julio y a la tercera vista ya no cerraba.
+- **DynamoDB** — access patterns rígidos: cada vista nueva del dashboard pedía un GSI nuevo.
+  Lo modelamos en el spike de julio y a la tercera vista ya no cerraba.
 - **SQLite + Litestream** — alcanzaba para el volumen actual, pero no soporta los writes
   concurrentes que ya tenemos en ingest.
 ```

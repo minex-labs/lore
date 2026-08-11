@@ -10,7 +10,9 @@ paths: [source/app.ts, source/commands/context.ts, source/commands/registry.ts]
 
 ## Why
 
-Los handlers se cargan por `registry.load()` y el acceso al store vive aparte. Esto no es teórico: un módulo de contexto compartido llevó el arranque de 50ms a 170ms sin que nadie lo notara, justo en el comando que un hook dispara por cada Edit.
+Los handlers se cargan por `registry.load()` y el acceso al store vive aparte. Esto no es
+teórico: un módulo de contexto compartido llevó el arranque de 50ms a 170ms sin que nadie lo
+notara, justo en el comando que un hook dispara por cada Edit.
 
 ## Rejected
 

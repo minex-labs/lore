@@ -10,7 +10,9 @@ paths: [source/lib/store.ts, source/commands/review.ts]
 
 ## Why
 
-El loader sólo lee `.lore/<área>/*.md` y `inbox` no es un área. Esa única regla es la razón de que una propuesta no pueda filtrarse al índice, a un listado ni a `lore for`: ningún comando tiene un filtro que olvidar.
+El loader sólo lee `.lore/<área>/*.md` y `inbox` no es un área. Esa única regla es la razón de
+que una propuesta no pueda filtrarse al índice, a un listado ni a `lore for`: ningún comando
+tiene un filtro que olvidar.
 
 ## Rejected
 
