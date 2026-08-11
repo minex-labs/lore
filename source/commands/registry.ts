@@ -87,12 +87,14 @@ export const COMMANDS: Command[] = [
 	{
 		name: "harvest",
 		summary: "Turn past discussions into proposed decisions in the inbox",
-		usage: "lore harvest <file...> [--run]",
+		usage: "lore harvest <file...> [--run] [--chunk <chars>]",
+		load: () => import("./harvest.js"),
 	},
 	{
 		name: "review",
 		summary: "Approve or discard proposed decisions, one by one",
-		usage: "lore review [--all]",
+		usage: "lore review [--all] [--list]",
+		load: () => import("./review.js"),
 	},
 ];
 
