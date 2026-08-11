@@ -25,7 +25,7 @@ what: Use Postgres as the primary store, not DynamoDB
 scope: [backend, data]
 status: active
 date: 2026-08-11
-source: https://www.notion.so/minex/store-decision-abc123
+source: https://www.notion.so/acme/store-decision-abc123
 paths: [packages/api/**]
 ---
 
@@ -40,14 +40,41 @@ sitio y evento). Con Postgres son una query; con Dynamo eran tres round-trips.
   GSI nuevo. Lo modelamos en el spike de julio y a la tercera vista ya no cerraba.
 ```
 
+Write the body in whatever language you think in — that friction is what stops
+people recording decisions at all. Only `what` and the field names are fixed to
+English, because `what` is the line every agent reads.
+
 Full spec: [`docs/format.md`](docs/format.md).
 
 ## How the agent gets it
 
-`lore init` writes a block into your `CLAUDE.md` telling the agent to read
-`.lore/INDEX.md` first, open only the decisions matching the areas its ticket
-touches, and treat `## Rejected` as a list of things not to propose. The index is
-one line per active decision, so it is cheap enough to read every session.
+`lore init` writes a block into your `CLAUDE.md` pointing the agent at
+`.lore/INDEX.md`, which is one line per active decision:
+
+```markdown
+# Lore index
+
+9 active decisions. Open the full file at `.lore/*/<id>.md`.
+
+## global  (always read)
+- `no-secrets-in-repo` — Keep secrets in 1Password, never in the repo
+
+## backend
+- `postgres-over-dynamo` — Use Postgres as the primary store, not DynamoDB
+- `raw-sql-no-orm` — Write SQL by hand, no ORM
+
+## data
+> Also applies here: `postgres-over-dynamo`
+```
+
+That is the whole budget: cheap enough to read on every session, specific enough
+to decide which two or three files to open. Superseded decisions stay on disk but
+leave the index — what stops an agent reviving one is the `## Rejected` list of the
+decision that replaced it, which is exactly where `lore supersede` puts it.
+
+`lore for <path>` closes the other direction: given a file, which decisions govern
+it. It follows grep's exit convention and prints nothing on a miss, so it can back
+a `PreToolUse` hook without drowning you in output.
 
 ## Commands
 
@@ -69,7 +96,7 @@ lore review                    approve or discard proposals, one screen each
 
 ## How decisions get in
 
-Four ways, in descending order of quality:
+Three ways, in descending order of quality:
 
 1. **`lore add`** — you, at a prompt. Goes straight into the lore.
 2. **The agent, mid-session** — via `lore add --json`. Lands in `.lore/inbox/` and
@@ -77,17 +104,29 @@ Four ways, in descending order of quality:
    costs one keystroke; a wrong entry in the lore misleads every agent after it.
 3. **`lore harvest`** — recovers decisions from old sessions, PR descriptions,
    Notion pages, Slack threads. Also lands in the inbox.
-4. There is no fourth way, and there are no connectors. lore never calls an API:
-   your agent already has Notion and Slack access, so it reads the source itself
-   and pipes JSON into `lore add`.
+
+There are no connectors, and there never will be. lore does not call APIs: your
+agent already has Notion and Slack access with your credentials, so it reads the
+source itself and pipes JSON into `lore add`. Ingestion is a schema on stdin.
 
 ## Install
 
-Not published yet. From a clone:
+Requires Node ≥ 20. Not published to npm yet; from a clone:
 
 ```
 npm install && npm run build && npm link
 ```
+
+## Status
+
+Working, unpublished, and used on itself: this repo carries its own `.lore/`, and
+CI runs `lore check --strict` against it on every push. The design decisions behind
+lore live in `.lore/`, not in prose — including the ones about ids, statuses and the
+review gate, each with the options that were turned down.
+
+The release gate is not the unit tests. It is
+[`docs/acceptance.md`](docs/acceptance.md): a clean session, a ticket whose natural
+path is a rejected option, and whether the agent proposes it anyway.
 
 ## License
 
