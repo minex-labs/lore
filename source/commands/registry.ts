@@ -69,17 +69,20 @@ export const COMMANDS: Command[] = [
 	{
 		name: "supersede",
 		summary: "Mark a decision as replaced by a newer one",
-		usage: "lore supersede <old-id> --by <new-id>",
+		usage: 'lore supersede <old-id> --by <new-id> --reason "why it was dropped"',
+		load: () => import("./supersede.js"),
 	},
 	{
 		name: "revoke",
 		summary: "Retire a decision by recording the decision that undoes it",
-		usage: "lore revoke <id>",
+		usage: "lore revoke <id> [--json]",
+		load: () => import("./revoke.js"),
 	},
 	{
 		name: "check",
 		summary: "Validate the lore and the index; non-zero exit on problems",
-		usage: "lore check [--strict]",
+		usage: "lore check [--strict] [--json]",
+		load: () => import("./check.js"),
 	},
 	{
 		name: "harvest",
