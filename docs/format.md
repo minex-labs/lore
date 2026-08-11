@@ -54,8 +54,10 @@ Exactly two sections, `## Why` then `## Rejected`. Any other heading is a parse
 error — the serializer would drop it on the next rewrite, and losing someone's
 prose silently is worse than refusing the file.
 
-- **`## Why`** is kept verbatim: paragraphs, lists and code blocks all survive
-  untouched.
+- **`## Why`** keeps its structure. Plain paragraphs are reflowed at 96 columns —
+  a `why` sent over `--json` arrives as one long line, and the PR diff is where
+  lore gets reviewed. Lists, quotes, headings and fenced code pass through
+  untouched, because reflowing those would corrupt them.
 - **`## Rejected`** is a bullet list and nothing else, one entry per discarded
   option, in the form `- **Option** — reason`. An indented line continues the
   reason above it. An entry with no reason is refused: the reason is the part that

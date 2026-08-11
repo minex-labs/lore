@@ -10,10 +10,10 @@ import {
 /**
  * A decision record: typed frontmatter plus a body of exactly two sections.
  *
- * `why` is kept verbatim — it may hold paragraphs, lists or code, and rewriting
- * it would be a good way to corrupt someone's prose. `rejected` is structured,
- * because `lore supersede` and `lore review` need to read the individual options
- * back out.
+ * `why` is free prose — paragraphs get reflowed on write, but lists, quotes and
+ * fenced code are left exactly as written, because reformatting those would
+ * corrupt them. `rejected` is structured, because `lore supersede` and
+ * `lore review` need to read the individual options back out.
  */
 export type Decision = {
 	frontmatter: Frontmatter;
