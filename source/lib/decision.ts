@@ -1,6 +1,7 @@
 import YAML from "yaml";
 import {
 	decisionInputSchema,
+	duplicateOption,
 	frontmatterSchema,
 	type DecisionInput,
 	type Frontmatter,
@@ -175,6 +176,14 @@ function parseRejected(lines: string[], issues: Issue[]): Rejected[] {
 				message: `"${entry.option}" has no reason — the reason is the part that stops it being proposed again`,
 			});
 		}
+	}
+
+	const duplicate = duplicateOption(rejected);
+	if (duplicate) {
+		issues.push({
+			field: "## Rejected",
+			message: `"${duplicate}" is listed twice — an agent asking whether it was turned down would get two answers`,
+		});
 	}
 
 	return rejected;

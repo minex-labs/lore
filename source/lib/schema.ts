@@ -106,6 +106,41 @@ export const rejectedSchema = z.object({
 export type Rejected = z.infer<typeof rejectedSchema>;
 
 /**
+ * How two option names are compared: only letters and digits count.
+ *
+ * Deliberately aggressive — "DynamoDB", "Dynamo DB" and "dynamo-db" all collapse
+ * to the same key. People write product names three ways in the same week, and in
+ * this field two spellings of one option is a defect. A false positive costs the
+ * author a rename or a merge of two reasons, which is what they wanted anyway;
+ * a false negative leaves an agent with two answers to the same question.
+ *
+ * `lore supersede` uses this same notion of sameness, so the check that stops a
+ * duplicate on write and the one that stops it on supersede cannot disagree.
+ */
+export function normalizeOption(text: string): string {
+	return text
+		.toLowerCase()
+		.normalize("NFD")
+		.replace(/[̀-ͯ]/g, "")
+		.replace(/[^a-z0-9]+/g, "");
+}
+
+/**
+ * Two entries naming the same option are a defect, not a nuance: an agent asking
+ * "did we already turn this down?" would get two different answers and no way to
+ * tell which one holds.
+ */
+export function duplicateOption(rejected: Rejected[]): string | undefined {
+	const seen = new Set<string>();
+	for (const entry of rejected) {
+		const key = normalizeOption(entry.option);
+		if (seen.has(key)) return entry.option;
+		seen.add(key);
+	}
+	return undefined;
+}
+
+/**
  * What callers hand to `lore add`: no id (derived from `what`), no status,
  * and the body as fields rather than markdown. Same shape from the prompts and
  * from stdin.
@@ -117,10 +152,16 @@ export const decisionInputSchema = z
 		why: z.string().trim().min(1, "a decision without a reason is just a note"),
 		rejected: z
 			.array(rejectedSchema)
-			.min(
-				1,
-				"name at least one option you turned down, and why — this is the point of the record",
-			),
+			.min(1, "name at least one option you turned down, and why — this is the point of the record")
+			.superRefine((entries, ctx) => {
+				const duplicate = duplicateOption(entries);
+				if (duplicate) {
+					ctx.addIssue({
+						code: "custom",
+						message: `"${duplicate}" is listed twice — merge the two reasons into one entry`,
+					});
+				}
+			}),
 		id: slugSchema.optional(),
 		date: dateSchema.optional(),
 		source: z.string().trim().min(1).optional(),

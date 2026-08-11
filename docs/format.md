@@ -66,6 +66,12 @@ prose silently is worse than refusing the file.
 At least one rejected entry is mandatory. A record with nothing turned down is a
 description of the code, and the code already says it.
 
+**No option may be listed twice.** Names are compared on letters and digits only,
+so `DynamoDB`, `Dynamo DB` and `dynamo-db` are one option, not three. An agent
+asking "did we already turn this down?" has to get one answer; two entries with
+the same name and different reasons give it two and no way to choose. If an option
+has a second reason, add it to the entry that already exists.
+
 ## Why this shape
 
 - Every frontmatter value is a scalar or a list of scalars. Nothing multi-line

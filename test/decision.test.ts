@@ -215,3 +215,29 @@ test("structure inside why survives the reflow untouched", () => {
 	assert.match(text, /^const x = 1; \/\/ una línea de código muy larga/m);
 	assert.equal(serializeDecision(expectOk(text)), text);
 });
+
+test("the same option cannot be rejected twice", () => {
+	const body = "## Rejected\n\n- **qwe** — una razón\n- **QWE** — otra razón\n";
+	const issues = expectIssues(SAMPLE.replace(/## Rejected[\s\S]*$/, body));
+	assert.ok(
+		issues.some((issue) => issue.includes("listed twice")),
+		`expected a duplicate-option error, got: ${issues.join(" | ")}`,
+	);
+});
+
+test("fromInput refuses a duplicated option, ignoring case and punctuation", () => {
+	const result = fromInput(
+		{
+			what: "Use Postgres as the primary store",
+			scope: ["backend"],
+			why: "porque las queries son relacionales",
+			rejected: [
+				{ option: "DynamoDB", reason: "access patterns rígidos" },
+				{ option: "dynamo db", reason: "otra razón distinta" },
+			],
+		},
+		"2026-08-11",
+	);
+	assert.ok(!result.ok);
+	assert.ok(result.issues.some((issue) => issue.message.includes("merge the two reasons")));
+});

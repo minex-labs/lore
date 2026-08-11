@@ -1,6 +1,7 @@
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { serializeDecision, type Decision } from "./decision.js";
+import { normalizeOption } from "./schema.js";
 import type { LoadedDecision } from "./store.js";
 
 /** Overwrite a decision that already exists, in canonical form. */
@@ -15,19 +16,9 @@ export function markSuperseded(decision: Decision, by: string): Decision {
 	};
 }
 
-/** Loose comparison so "DynamoDB" and "dynamodb" count as the same option. */
-function normalise(text: string): string {
-	return text
-		.toLowerCase()
-		.normalize("NFD")
-		.replace(/[̀-ͯ]/g, "")
-		.replace(/[^a-z0-9]+/g, " ")
-		.trim();
-}
-
 export function alreadyRejects(decision: Decision, option: string): boolean {
-	const needle = normalise(option);
-	return decision.rejected.some((entry) => normalise(entry.option) === needle);
+	const needle = normalizeOption(option);
+	return decision.rejected.some((entry) => normalizeOption(entry.option) === needle);
 }
 
 /**
