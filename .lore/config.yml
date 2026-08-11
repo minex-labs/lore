@@ -1,0 +1,12 @@
+# lore configuration.
+#
+# Areas of this codebase. `lore add` offers these, `lore check` refuses a scope
+# that is not listed here, and the description is what helps an agent map a ticket
+# onto an area — so write it for a reader who does not know the codebase.
+#
+# Keep the list short. Areas are for deciding what to read, not for filing.
+areas:
+  global: Applies to the whole repo; read on every session
+  format: The on-disk decision format, the parser, and INDEX.md
+  cli: Command surface, argument handling, startup cost
+  capture: How decisions get in — add, harvest, and the review gate
