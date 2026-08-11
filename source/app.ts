@@ -1,7 +1,6 @@
 import { COMMANDS, findCommand } from "./commands/registry.js";
+import { EXIT_ERROR, EXIT_OK, type IO } from "./commands/context.js";
 import { getVersion } from "./lib/version.js";
-
-const EXIT_USAGE = 2;
 
 export function helpText(): string {
 	const width = Math.max(...COMMANDS.map((command) => command.name.length));
@@ -20,40 +19,46 @@ export function helpText(): string {
 	].join("\n");
 }
 
-export type RunIO = {
-	out: (text: string) => void;
-	err: (text: string) => void;
-};
+export type RunIO = IO;
 
 const processIO: RunIO = {
 	out: (text) => process.stdout.write(text),
 	err: (text) => process.stderr.write(text),
 };
 
-export async function run(argv: string[], io: RunIO = processIO): Promise<number> {
+export async function run(
+	argv: string[],
+	io: RunIO = processIO,
+	cwd = process.cwd(),
+): Promise<number> {
 	const [first, ...rest] = argv;
 
 	if (!first || first === "--help" || first === "-h" || first === "help") {
 		io.out(helpText());
-		return 0;
+		return EXIT_OK;
 	}
 
 	if (first === "--version" || first === "-v") {
 		io.out(`${getVersion()}\n`);
-		return 0;
+		return EXIT_OK;
 	}
 
 	const command = findCommand(first);
 	if (!command) {
 		io.err(`lore: unknown command "${first}"\n\n${helpText()}`);
-		return EXIT_USAGE;
+		return EXIT_ERROR;
 	}
 
 	if (rest.includes("--help") || rest.includes("-h")) {
 		io.out(`${command.summary}\n\n  ${command.usage}\n`);
-		return 0;
+		return EXIT_OK;
 	}
 
-	io.err(`lore: "${command.name}" is not implemented yet\n`);
-	return EXIT_USAGE;
+	if (!command.load) {
+		io.err(`lore: "${command.name}" is not implemented yet\n`);
+		return EXIT_ERROR;
+	}
+
+	const module = await command.load();
+	return module.default({ argv: rest, io, cwd });
 }

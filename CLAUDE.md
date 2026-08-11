@@ -112,6 +112,12 @@ npm run format    prettier --write
 
 - A command that is not implemented exits non-zero. Never print success for work
   that did not happen.
+- **Nothing on the startup path may import the store, the schema, zod or yaml.**
+  `app.ts` and `commands/context.ts` run on every invocation; handlers load through
+  `registry.load()`, and store access lives in `commands/store-access.ts`. Two tests
+  in `test/startup.test.ts` enforce this by walking the static import graph — they
+  exist because a shared context module once quietly took startup from 50ms to
+  170ms, on the command a PreToolUse hook fires for every edit.
 - Both `lore add` modes — interactive and `--json` on stdin — build the same object
   and go through the same zod schema. One validation path, no exceptions.
 - `INDEX.md` is never written by hand, including by you.

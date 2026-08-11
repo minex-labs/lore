@@ -20,7 +20,14 @@ export type Command = {
 	name: CommandName;
 	summary: string;
 	usage: string;
+	/**
+	 * Loaded on demand, so running one command never pays to import the others.
+	 * Missing means "declared but not built yet", which exits non-zero.
+	 */
+	load?: () => Promise<{ default: Handler }>;
 };
+
+export type Handler = (ctx: import("./context.js").CommandContext) => Promise<number>;
 
 export const COMMANDS: Command[] = [
 	{
@@ -36,15 +43,27 @@ export const COMMANDS: Command[] = [
 	{
 		name: "list",
 		summary: "List decisions, optionally filtered by scope or status",
-		usage: "lore list [--scope <area>] [--status <status>]",
+		usage: "lore list [--scope <area>] [--status <status>] [--json]",
+		load: () => import("./list.js"),
 	},
-	{ name: "show", summary: "Print a single decision", usage: "lore show <id>" },
+	{
+		name: "show",
+		summary: "Print a single decision",
+		usage: "lore show <id> [--json]",
+		load: () => import("./show.js"),
+	},
 	{
 		name: "for",
 		summary: "Show the decisions governing a file path",
-		usage: "lore for <path>",
+		usage: "lore for <path> [--json]",
+		load: () => import("./for.js"),
 	},
-	{ name: "index", summary: "Regenerate .lore/INDEX.md", usage: "lore index" },
+	{
+		name: "index",
+		summary: "Regenerate .lore/INDEX.md",
+		usage: "lore index [--check] [--quiet]",
+		load: () => import("./index-command.js"),
+	},
 	{
 		name: "supersede",
 		summary: "Mark a decision as replaced by a newer one",
