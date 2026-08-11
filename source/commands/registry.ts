@@ -39,7 +39,8 @@ export const COMMANDS: Command[] = [
 	{
 		name: "add",
 		summary: "Record a decision, interactively or from JSON on stdin",
-		usage: "lore add [--json]",
+		usage: "lore add [--json] [--approved] [--schema]",
+		load: () => import("./add.js"),
 	},
 	{
 		name: "list",

@@ -42,8 +42,10 @@ test("unknown command exits 2 and says so on stderr", async () => {
 });
 
 test("a known but unimplemented command exits 2, never 0", async () => {
+	const pending = COMMANDS.find((command) => !command.load);
+	if (!pending) return; // every command is built; nothing left to assert
 	const c = capture();
-	assert.equal(await run(["add"], c.io), 2);
+	assert.equal(await run([pending.name], c.io), 2);
 	assert.match(c.err(), /not implemented yet/);
 });
 

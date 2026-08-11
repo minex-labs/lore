@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import YAML from "yaml";
 import { z } from "zod";
@@ -65,6 +65,28 @@ export function loadConfig(loreDir: string): LoadedConfig {
 	}
 
 	return { config: result.data };
+}
+
+/**
+ * Add an area to config.yml, keeping the comments intact.
+ *
+ * Round-tripping through a plain object would strip the explanatory header, and
+ * that header is what stops the area list turning into a filing cabinet.
+ */
+export function addArea(loreDir: string, name: string, description: string): void {
+	const path = join(loreDir, CONFIG_FILE);
+	const raw = (() => {
+		try {
+			return readFileSync(path, "utf8");
+		} catch {
+			return "areas:\n";
+		}
+	})();
+
+	const doc = YAML.parseDocument(raw);
+	if (!doc.has("areas")) doc.set("areas", {});
+	doc.setIn(["areas", name], description.trim() || name);
+	writeFileSync(path, doc.toString({ lineWidth: 0 }), "utf8");
 }
 
 export function declaredAreas(config: Config): string[] {

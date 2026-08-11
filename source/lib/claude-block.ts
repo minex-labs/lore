@@ -33,8 +33,9 @@ code, and add to them when a decision gets made.
 
 ### Writing
 
-Record a decision with \`lore add --json\` (object on stdin; \`lore add --help\` for
-the schema). Never write files under \`.lore/\` by hand, and never touch \`INDEX.md\`.
+Record a decision with \`lore add --json\` (object on stdin; \`lore add --schema\` for
+the payload). Send a short explicit \`id\` — it appears on every line of the index.
+Never write files under \`.lore/\` by hand, and never touch \`INDEX.md\`.
 
 Record it only if ALL FOUR hold:
 

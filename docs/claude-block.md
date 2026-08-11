@@ -1,8 +1,11 @@
 # The CLAUDE.md block
 
 `lore init` injects this between `<!-- lore:start -->` and `<!-- lore:end -->` in
-the target repo's `CLAUDE.md`, and rewrites it in place on later runs. Draft; the
-template ships in step 3.
+the target repo's `CLAUDE.md`, and rewrites it in place on later runs.
+
+The text below is quoted verbatim from `CLAUDE_BLOCK` in
+`source/lib/claude-block.ts`, which is the source of truth. A test fails if the
+two drift, so edit the code and re-sync this file — never the other way round.
 
 ```markdown
 <!-- lore:start -->
@@ -23,8 +26,9 @@ code, and add to them when a decision gets made.
 
 ### Writing
 
-Record a decision with `lore add --json` (object on stdin; `lore add --help` for
-the schema). Never write files under `.lore/` by hand, and never touch `INDEX.md`.
+Record a decision with `lore add --json` (object on stdin; `lore add --schema` for
+the payload). Send a short explicit `id` — it appears on every line of the index.
+Never write files under `.lore/` by hand, and never touch `INDEX.md`.
 
 Record it only if ALL FOUR hold:
 
