@@ -42,6 +42,24 @@ it is the wrong change.
 | Generated files | `INDEX.md` is derived output with a "do not edit" header. Mutating commands regenerate it; `lore check` fails when it is stale. |
 | `dist/` | Not committed. Built by `prepublishOnly`. (mintree commits it to survive `npm i -g github:…`; if we ever need that here, revisit.) |
 | Tests | `node --test` with `tsx`. Lint with eslint + prettier, tabs, width 100 — same as mintree. |
+| Integrations | **None, ever** — see below. |
+| `lore for` | Built as a hook engine: `--json`, and grep's exit convention (0 = matched, 1 = no match and total silence, 2 = error). |
+
+### No connectors to Notion, Slack, or anything else
+
+`lore` never talks to a third-party API, and no version of it ever should. Not
+"not yet" — never.
+
+The material worth harvesting lives in discussions: Notion pages, Slack threads,
+PR descriptions, old Claude sessions. The obvious move is to build connectors and
+pull it in. Don't. **The agent already has those integrations.** It reads the page
+or the thread with its own MCP server, using the user's own credentials, and pipes
+the result into `lore add --json`. Ingestion is already solved by a schema on stdin.
+
+Building a connector would buy nothing and cost everything that makes this tool
+cheap: OAuth flows, stored tokens, network calls in a binary whose entire pitch is
+a 50ms cold start, and an API surface to keep up with. If you are about to add one,
+the thing to add instead is a better prompt in `lore harvest`.
 
 ### Retiring a decision without a replacement
 
