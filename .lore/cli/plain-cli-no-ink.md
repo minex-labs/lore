@@ -19,5 +19,5 @@ levantar React.
 - **Ink + Pastel** — es el stack de mintree y se copiaba solo, pero levantar React son
   ~300-500ms de arranque en un binario cuyo pitch entero es ser barato de invocar
 - **Go o Rust** — bajarían a ~5ms y darían binario único para Homebrew, pero sacan del stack
-  conocido y complican @minex/lore en npm (wrapper y binarios por plataforma) para ganar 45ms
-  que nadie percibe
+  conocido y complican @minex-labs/lore en npm (wrapper y binarios por plataforma) para ganar
+  45ms que nadie percibe

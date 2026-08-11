@@ -111,15 +111,15 @@ source itself and pipes JSON into `lore add`. Ingestion is a schema on stdin.
 
 ## Install
 
-Requires Node ≥ 20. Not published to npm yet; from a clone:
+Requires Node ≥ 20.
 
 ```
-npm install && npm run build && npm link
+npm install -g @minex-labs/lore
 ```
 
 ## Status
 
-Working, unpublished, and used on itself: this repo carries its own `.lore/`, and
+Early but working, and used on itself: this repo carries its own `.lore/`, and
 CI runs `lore check --strict` against it on every push. The design decisions behind
 lore live in `.lore/`, not in prose — including the ones about ids, statuses and the
 review gate, each with the options that were turned down.

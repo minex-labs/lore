@@ -1,5 +1,5 @@
 {
-	"name": "@minex/lore",
+	"name": "@minex-labs/lore",
 	"version": "0.1.0",
 	"description": "Curated, versioned decision records that coding agents actually read before touching your code.",
 	"license": "MIT",

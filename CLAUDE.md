@@ -38,7 +38,7 @@ alternatives: conventions, layout, and how to run things.
 
 | Topic | Value |
 | --- | --- |
-| Name | `lore`. Binary is `lore`, npm package is `@minex/lore`. Settled — do not propose alternatives. |
+| Name | `lore`. Binary is `lore`, npm package is `@minex-labs/lore`. Settled — do not propose alternatives. |
 | Runtime | Node ≥ 20, TypeScript ESM, strict. |
 | Deps | `yaml` (frontmatter), `zod` (schema), `picomatch` (globs), `@clack/prompts` (interactive only, dynamically imported). Keep this list short; every dependency is startup cost. |
 | Storage | Markdown files under `.lore/`, versioned in the repo, grouped by area, plus a generated `INDEX.md`. No database, no server. |
