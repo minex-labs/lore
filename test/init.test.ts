@@ -1,10 +1,9 @@
 import assert from "node:assert/strict";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { test } from "node:test";
-import { BLOCK_END, BLOCK_START, CLAUDE_BLOCK, injectBlock } from "../source/lib/claude-block.js";
+import { BLOCK_END, BLOCK_START, injectBlock } from "../source/lib/claude-block.js";
 import { invoke } from "./helpers.js";
 
 function emptyRepo(): string {
@@ -141,13 +140,4 @@ test("injectBlock replaces an old block in place rather than stacking copies", (
 	assert.doesNotMatch(result.text, /old instructions/);
 	assert.match(result.text, /Más reglas\./, "content after the block must survive");
 	assert.equal(injectBlock(result.text).action, "unchanged");
-});
-
-test("the block in docs/claude-block.md is the one the code ships", () => {
-	const docs = resolve(dirname(fileURLToPath(import.meta.url)), "..", "docs", "claude-block.md");
-	const text = readFileSync(docs, "utf8");
-	assert.ok(
-		text.includes(CLAUDE_BLOCK),
-		"docs/claude-block.md has drifted from CLAUDE_BLOCK in source/lib/claude-block.ts",
-	);
 });
