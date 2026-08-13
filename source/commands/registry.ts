@@ -6,6 +6,7 @@
 export type CommandName =
 	| "init"
 	| "add"
+	| "amend"
 	| "list"
 	| "show"
 	| "for"
@@ -41,6 +42,12 @@ export const COMMANDS: Command[] = [
 		summary: "Record a decision, interactively or from JSON on stdin",
 		usage: "lore add [--json] [--approved] [--schema]",
 		load: () => import("./add.js"),
+	},
+	{
+		name: "amend",
+		summary: "Fix a decision without deciding again — why, scope, paths, source",
+		usage: "lore amend <id> [--json] [--scope a,b] [--paths x,y] [--source ...]",
+		load: () => import("./amend.js"),
 	},
 	{
 		name: "list",

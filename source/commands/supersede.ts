@@ -7,6 +7,7 @@ import {
 	withRejectedOption,
 } from "../lib/mutate.js";
 import { findById, suggestIds, type Store } from "../lib/store.js";
+import { normalizeOption } from "../lib/schema.js";
 import { refreshIndex } from "../lib/write.js";
 
 export default async function supersede(ctx: CommandContext): Promise<number> {
@@ -52,6 +53,29 @@ export default async function supersede(ctx: CommandContext): Promise<number> {
 	// The old decision's `what` becomes the name of the rejected option, which is
 	// what makes "did we already try this?" answerable from the live decision.
 	const option = older.decision.frontmatter.what;
+
+	// Same `what` on both sides means this is not a replacement — it is the same
+	// decision being corrected or moved. Left alone, it would list itself as a
+	// rejected option, and `lore for` prints those inline: an agent editing a
+	// governed file would read "Already rejected: <the thing this decision tells
+	// you to do>". That inverts the message exactly where it is consumed.
+	if (normalizeOption(option) === normalizeOption(newer.decision.frontmatter.what)) {
+		ctx.io.err(
+			[
+				`lore supersede: "${oldId}" and "${newId}" say the same thing.`,
+				"",
+				"  Superseding would add that sentence to its own list of rejected options,",
+				"  and `lore for` prints those inline — an agent would read the decision",
+				"  telling it not to do what the decision says to do.",
+				"",
+				"  To fix or move a decision without deciding again, use `lore amend`:",
+				`    lore amend ${oldId} --scope <area>`,
+				`    lore amend ${oldId} --json     # {why?, scope?, paths?, source?}`,
+				"",
+			].join("\n"),
+		);
+		return EXIT_ERROR;
+	}
 	const reason = args.parsed.values["reason"];
 	const skip = args.parsed.values["no-reason"] === true;
 

@@ -13,6 +13,9 @@ export type Finding = { severity: Severity; where: string; message: string };
 /** Above this, `global` has stopped being "read every session" and become a dump. */
 export const GLOBAL_BUDGET = 10;
 
+/** Name the worst few; summarise the tail. A wall of size notes is read as noise. */
+const WORST_SHOWN = 3;
+
 const IGNORED_DIRS = new Set([
 	".git",
 	"node_modules",
@@ -141,15 +144,31 @@ function checkBudget(store: Store, config: Config): Finding[] {
 	const findings: Finding[] = [];
 	const active = store.decisions.filter((l) => l.decision.frontmatter.status === "active");
 
-	for (const loaded of active) {
-		const size = loaded.decision.why.length;
-		if (size > config.budget.why) {
-			findings.push({
-				severity: "info",
-				where: loaded.file,
-				message: `## Why is ${size} chars (budget ${config.budget.why}) — trim it to the decision and its reason; the background belongs behind the \`source\` link`,
-			});
-		}
+	// Ordered by how far over they are, and only the worst few by name. A list
+	// where almost everything appears reads as noise even when every line is true,
+	// and the records that are 6 characters over drown the ones that are 1,600
+	// over. Measured on a real repo: 10 of 11 decisions flagged, undifferentiated.
+	const over = active
+		.map((loaded) => ({ loaded, size: loaded.decision.why.length }))
+		.filter((entry) => entry.size > config.budget.why)
+		.sort((a, b) => b.size - a.size);
+
+	for (const entry of over.slice(0, WORST_SHOWN)) {
+		findings.push({
+			severity: "info",
+			where: entry.loaded.file,
+			message: `## Why is ${entry.size} chars (budget ${config.budget.why}) — trim it to the decision and its reason; the background belongs behind the \`source\` link`,
+		});
+	}
+	const rest = over.slice(WORST_SHOWN);
+	if (rest.length > 0) {
+		const smallest = rest[rest.length - 1]!.size;
+		const largest = rest[0]!.size;
+		findings.push({
+			severity: "info",
+			where: `${rest.length} more`,
+			message: `over the ${config.budget.why} budget by less (${smallest}–${largest} chars) — \`lore check --json\` lists them all`,
+		});
 	}
 
 	const alwaysRead = active.filter((l) => l.decision.frontmatter.scope.includes(GLOBAL_AREA));

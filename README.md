@@ -115,6 +115,7 @@ even when the repo root already has one.
 lore init                      set up .lore/ and wire the block into CLAUDE.md
 lore add                       record a decision, interactively
 lore add --json                …or from an object on stdin (this is the agent's door)
+lore amend <id>                fix a decision without deciding again
 lore list [--scope] [--status] see what is there
 lore show <id>                 print one decision
 lore for <path>                which decisions govern this file
@@ -166,6 +167,40 @@ Three ways, in descending order of quality:
    costs one keystroke; a wrong entry in the lore misleads every agent after it.
 3. **`lore harvest`** — recovers decisions from old sessions, PR descriptions,
    Notion pages, Slack threads. Also lands in the inbox.
+
+### Amending versus superseding
+
+Two different operations, and using the wrong one damages the record.
+
+**`lore supersede`** is for deciding again: the old decision is retired and its
+`what` is added to the `## Rejected` list of the one replacing it, which is what
+stops an agent proposing it back.
+
+**`lore amend`** is for everything that is not deciding again — correcting a fact
+that aged, moving a decision to another area, fixing a `source`. The identity is
+frozen (`what`, `id`, `date`, `status`); the context is editable (`## Why`,
+`scope`, `paths`, `source`); and `## Rejected` may only grow, because adding an
+option that came up later completes the record while removing one rewrites it.
+
+```
+lore amend keep-counts-out-of-prose --scope guards
+lore amend keep-counts-out-of-prose --json    # {why?, scope?, paths?, source?, rejected?}
+```
+
+That line is the whole design. Unrestricted, amending would make the difference
+between fixing a typo and quietly deciding something else live only in the intent
+of whoever typed the command, and `supersede` would stop being used. Any narrower
+and you could not move a decision between areas — which is exactly what
+`lore check` tells you to do when `global` gets heavy.
+
+Superseding a decision with one that says the same thing is refused, and points
+here: it would add that sentence to its own list of rejected options, and
+`lore for` prints those inline, so an agent would read the decision telling it not
+to do what the decision says.
+
+The trail is the git diff. Unlike the inbox, which vanishes from history once a
+migration lands as one commit, an amendment *is* a diff — it says what changed,
+not just that something did.
 
 ### When `--approved` is the right call
 
