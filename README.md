@@ -1,4 +1,20 @@
-# lore
+<h1 align="center">lore</h1>
+
+<p align="center">
+  <strong>The decisions your team already made, where the agent will read them</strong>
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@minex-labs/lore"><img src="https://img.shields.io/npm/v/@minex-labs/lore.svg" alt="npm version"></a>
+  <a href="https://github.com/minex-labs/lore/actions/workflows/ci.yml"><img src="https://github.com/minex-labs/lore/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/minex-labs/lore/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/@minex-labs/lore.svg" alt="license"></a>
+</p>
+
+<p align="center">
+  Stop your coding agent from picking the library you rejected last quarter.
+</p>
+
+---
 
 Your coding agent does not know what you already decided. So it picks the library
 you rejected last quarter, rebuilds the pattern you solved a different way, and
