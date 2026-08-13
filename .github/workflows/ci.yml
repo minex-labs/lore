@@ -23,3 +23,17 @@ jobs:
       - run: npm test
       # This repo carries its own lore, so the tool validates itself on every push.
       - run: node dist/cli.js check --strict
+
+  # One stable check for branch protection to require. Without it the ruleset
+  # would have to name every matrix leg, and adding a Node version would
+  # silently stop being required.
+  gate:
+    needs: build
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail unless every matrix job passed
+        if: needs.build.result != 'success'
+        run: |
+          echo "build was: ${{ needs.build.result }}"
+          exit 1
