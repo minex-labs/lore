@@ -127,6 +127,35 @@ lore harvest <file...>         turn past discussions into proposals
 lore review                    approve or discard proposals, one screen each
 ```
 
+## What it costs to read
+
+`lore check` reports size, because the governing principle only holds if someone
+is measuring it:
+
+```
+· global/ + INDEX.md   9240 chars (~2310 tokens) are read on every session, over
+                       the 8000 budget. Heaviest: strict-ts (2260), … Move what is
+                       not truly global to an area
+· backend/orm.md       ## Why is 1774 chars (budget 600) — trim it to the decision
+                       and its reason; the background belongs behind the `source` link
+```
+
+The number that matters is the first one. The block lore writes into `CLAUDE.md`
+says to read everything under `global` on every session, so `INDEX.md` + `global/`
+is a fixed cost paid by every ticket. A long decision in a niche area is read by
+whoever touches that area; one in `global` is read by everyone, always.
+
+Both budgets are configurable in `config.yml` (`budget.why`, `budget.always_read`).
+The defaults come from measurement: across a lore whose records this tool considers
+good, `## Why` runs 184–393 characters.
+
+**Size is reported, never enforced — not even under `--strict`.** Everything lore
+calls an error makes the lore *wrong*: bad frontmatter, a dangling supersede, a
+stale index. A long record is not wrong, it is just expensive, and it may well be
+worth it. And the asymmetry is brutal: `lore check --strict` runs in merge gates,
+so a check that fails on prose gets pulled out of the gate — taking the checks that
+were catching real breakage with it.
+
 ## How decisions get in
 
 Three ways, in descending order of quality:
@@ -137,6 +166,24 @@ Three ways, in descending order of quality:
    costs one keystroke; a wrong entry in the lore misleads every agent after it.
 3. **`lore harvest`** — recovers decisions from old sessions, PR descriptions,
    Notion pages, Slack threads. Also lands in the inbox.
+
+### When `--approved` is the right call
+
+`--approved` skips the inbox. The rule of thumb is that it is for humans, not for
+agents — but the line that actually matters is *when the human approved*, not who
+typed the command.
+
+Adopting lore in an existing repo is the case worth naming: a person curates the
+list of decisions — id, `what`, area, source — and an agent transcribes them from
+prose that was already reviewed. The approval happened **before** anything was
+written, so routing it through the inbox adds nothing. Worse, migration has two
+halves that belong together — writing the decision and deleting the old paragraph
+— and if the decision waits in `inbox/`, the repo sits with neither the old prose
+nor its replacement, on `main`, until someone runs `lore review`.
+
+So: `--approved` for a list a human curated first. The inbox for anything decided
+mid-ticket. Note that nothing on disk tells the two apart afterwards — the record
+of who approved a migration is the pull request that carried it, so say so there.
 
 There are no connectors, and there never will be. lore does not call APIs: your
 agent already has Notion and Slack access with your credentials, so it reads the

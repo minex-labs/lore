@@ -1,7 +1,7 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import picomatch from "picomatch";
-import { declaredAreas, loadConfig } from "./config.js";
+import { declaredAreas, loadConfig, type Config } from "./config.js";
 import { renderIndex } from "./index-file.js";
 import { GLOBAL_AREA } from "./schema.js";
 import { INDEX_FILE, type Store } from "./store.js";
@@ -100,6 +100,7 @@ export function check(store: Store): Finding[] {
 	}
 
 	findings.push(...checkPaths(store));
+	findings.push(...checkBudget(store, config));
 
 	const pending = inboxIds(store.loreDir);
 	if (pending.length > 0) {
@@ -111,6 +112,76 @@ export function check(store: Store): Finding[] {
 	}
 
 	return findings;
+}
+
+/**
+ * Report what the lore costs to read.
+ *
+ * **Severity is `info`, on purpose, and never rises to error even under
+ * `--strict`.** Everything this tool calls an error makes the lore *wrong*: bad
+ * frontmatter, a dangling supersede, a stale index. Size is not wrong — a long
+ * record can be entirely justified — so it is a measurement, not a defect.
+ *
+ * The asymmetry decides it. `lore check --strict` runs in the merge gate of real
+ * repos; if it starts failing on prose, the first thing anyone does is take it out
+ * of the gate, and that takes the checks that *were* catching real breakage with
+ * it. A budget line that gets read and ignored costs nothing. A budget line that
+ * blocks a merge costs the whole command.
+ *
+ * Two different measurements, because they are two different problems:
+ *
+ * - **Per decision, `## Why` only.** That is where prose inflates. `## Rejected`
+ *   is the field that earns lore its keep and routinely runs longer than the why
+ *   in a healthy record — charging for it would push people to cut the wrong half.
+ * - **Per always-read context, whole files.** `INDEX.md` plus `global/` is what
+ *   every session pays regardless of the ticket, and when an agent opens a
+ *   decision it reads all of it, rejected options included.
+ */
+function checkBudget(store: Store, config: Config): Finding[] {
+	const findings: Finding[] = [];
+	const active = store.decisions.filter((l) => l.decision.frontmatter.status === "active");
+
+	for (const loaded of active) {
+		const size = loaded.decision.why.length;
+		if (size > config.budget.why) {
+			findings.push({
+				severity: "info",
+				where: loaded.file,
+				message: `## Why is ${size} chars (budget ${config.budget.why}) — trim it to the decision and its reason; the background belongs behind the \`source\` link`,
+			});
+		}
+	}
+
+	const alwaysRead = active.filter((l) => l.decision.frontmatter.scope.includes(GLOBAL_AREA));
+	const indexSize = fileSize(join(store.loreDir, INDEX_FILE));
+	const total =
+		indexSize + alwaysRead.reduce((sum, l) => sum + fileSize(join(store.loreDir, l.file)), 0);
+
+	if (total > config.budget.always_read) {
+		const heaviest = alwaysRead
+			.map((l) => ({ id: l.decision.frontmatter.id, size: fileSize(join(store.loreDir, l.file)) }))
+			.sort((a, b) => b.size - a.size)
+			.slice(0, 3)
+			.map((entry) => `${entry.id} (${entry.size})`)
+			.join(", ");
+		findings.push({
+			severity: "info",
+			where: `${GLOBAL_AREA}/ + ${INDEX_FILE}`,
+			message:
+				`${total} chars (~${Math.round(total / 4)} tokens) are read on every session, over the ${config.budget.always_read} budget. ` +
+				`Heaviest: ${heaviest}. Move what is not truly global to an area — a long decision in a niche area is only read by whoever touches it`,
+		});
+	}
+
+	return findings;
+}
+
+function fileSize(path: string): number {
+	try {
+		return statSync(path).size;
+	} catch {
+		return 0;
+	}
 }
 
 /** Globs that match nothing usually mean the code moved and the decision did not. */

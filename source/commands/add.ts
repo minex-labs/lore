@@ -49,12 +49,25 @@ export default async function add(ctx: CommandContext): Promise<number> {
 
 	if (args.parsed.values["json"] === true) {
 		const { addFromJson, emitJson } = await import("./add-json.js");
+		const approved = args.parsed.values["approved"] === true;
 		const raw = await readStdin();
 		const { result, code } = addFromJson(raw, loaded.store, {
-			approved: args.parsed.values["approved"] === true,
+			approved,
 			...(typeof today === "string" ? { today } : {}),
 		});
 		emitJson(ctx.io, result);
+
+		// Nothing on disk distinguishes a record written this way from one a human
+		// approved in `lore review`, and git does not either once the migration
+		// lands as a single commit. So the gate that was skipped is at least said
+		// out loud, on stderr, where it does not disturb the JSON on stdout.
+		if (approved && result.ok && result.created.length > 0) {
+			const n = result.created.length;
+			ctx.io.err(
+				`note: --approved put ${n} decision${n === 1 ? "" : "s"} straight into the lore, skipping \`lore review\`.\n` +
+					"That is the right call when a human curated the list first, and the wrong one for something decided mid-ticket.\n",
+			);
+		}
 		return code;
 	}
 
