@@ -1,4 +1,5 @@
-import { findLoreDir, loadStore, type Store } from "../lib/store.js";
+import { dirname, relative } from "node:path";
+import { findLoreDir, findLoreDirOutsideRepo, loadStore, type Store } from "../lib/store.js";
 import type { CommandContext } from "./context.js";
 
 /**
@@ -6,11 +7,24 @@ import type { CommandContext } from "./context.js";
  * process, so only the handlers that actually read decisions pay for them.
  */
 
-/** Load the store, or explain why we cannot. */
+/**
+ * Load the store, or explain why we cannot.
+ *
+ * The lookup stops at the repo root, so the message says "in this repo" — saying
+ * "or in any parent" would describe a search we no longer do. When there is a
+ * lore just outside the boundary, say so: otherwise "not found" reads as a bug to
+ * anyone who can see the directory sitting right there.
+ */
 export function requireStore(ctx: CommandContext): { ok: true; store: Store } | { ok: false } {
 	const loreDir = findLoreDir(ctx.cwd);
 	if (!loreDir) {
-		ctx.io.err("lore: no .lore/ directory here or in any parent. Run `lore init` first.\n");
+		ctx.io.err("lore: no .lore/ directory in this repo. Run `lore init` first.\n");
+		const outside = findLoreDirOutsideRepo(ctx.cwd);
+		if (outside) {
+			ctx.io.err(
+				`there is one at ${relative(ctx.cwd, dirname(outside)) || "."}/, but that is a different git repo — lore does not read across that boundary.\n`,
+			);
+		}
 		return { ok: false };
 	}
 	return { ok: true, store: loadStore(loreDir) };

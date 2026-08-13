@@ -47,6 +47,7 @@ alternatives: conventions, layout, and how to run things.
 | `dist/` | Not committed. Built by `prepublishOnly`. (mintree commits it to survive `npm i -g github:…`; if we ever need that here, revisit.) |
 | Tests | `node --test` with `tsx`. Lint with eslint + prettier, tabs, width 100 — same as mintree. |
 | `lore for` | Built as a hook engine: `--json`, and grep's exit convention (0 = matched, 1 = no match and total silence, 2 = error). |
+| `.lore/` lookup | Walks up, stops at the git repo root (`.git` as file **or** directory, so worktrees and submodules count). Never reads or writes across a repo boundary. |
 
 ---
 

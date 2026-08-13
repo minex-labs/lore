@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { parseDecision, type Decision } from "./decision.js";
 import { GLOBAL_AREA, RESERVED_AREAS } from "./schema.js";
@@ -27,7 +27,31 @@ export type Store = {
 	areas: string[];
 };
 
-/** Walk up from `cwd` looking for `.lore/`. Undefined if this is not a lore repo. */
+/**
+ * Is this directory the root of a git repository?
+ *
+ * `.git` is a directory in an ordinary clone, but a **file** in a worktree and in
+ * a submodule — both of which are everyday setups here — so this checks for
+ * existence, not for a directory. Checking `isDirectory` would silently treat
+ * every worktree as "not a repo" and walk straight past its root.
+ */
+function isRepoRoot(dir: string): boolean {
+	return existsSync(join(dir, ".git"));
+}
+
+/**
+ * Walk up from `cwd` looking for `.lore/`, stopping at the repo boundary.
+ *
+ * Going up is the point: in a monorepo, `packages/api/` must find the `.lore/` at
+ * the root. Crossing into a *different* repo is not — a decision recorded while
+ * standing in a nested repo would be versioned in a repo that does not govern it
+ * and probably is not even cloned alongside it. And some repos are nested inside
+ * others precisely to stay separate.
+ *
+ * So the rule is not "do not go up", it is "do not leave this repo". A directory
+ * that is not in a repo at all has no boundary to respect, and walks to the root
+ * as before.
+ */
 export function findLoreDir(cwd: string): string | undefined {
 	let current = resolve(cwd);
 	for (;;) {
@@ -37,6 +61,33 @@ export function findLoreDir(cwd: string): string | undefined {
 		} catch {
 			// keep walking
 		}
+		// Checked after `.lore/`, so a lore at the repo root is still found.
+		if (isRepoRoot(current)) return undefined;
+		const parent = dirname(current);
+		if (parent === current) return undefined;
+		current = parent;
+	}
+}
+
+/**
+ * The nearest `.lore/` *outside* this repo, if any.
+ *
+ * Only for telling the user about it. Nothing reads or writes through this: a
+ * command that silently used it would be the bug this boundary exists to stop.
+ */
+export function findLoreDirOutsideRepo(cwd: string): string | undefined {
+	let current = resolve(cwd);
+	let left = false;
+	for (;;) {
+		if (left) {
+			const candidate = join(current, LORE_DIR);
+			try {
+				if (statSync(candidate).isDirectory()) return candidate;
+			} catch {
+				// keep walking
+			}
+		}
+		if (isRepoRoot(current)) left = true;
 		const parent = dirname(current);
 		if (parent === current) return undefined;
 		current = parent;

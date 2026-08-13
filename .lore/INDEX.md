@@ -2,7 +2,7 @@
 
 # Lore index
 
-9 active decisions. Open the full file at `.lore/*/<id>.md`.
+10 active decisions. Open the full file at `.lore/*/<id>.md`.
 
 ## global  (always read)
 - `mixed-language-by-field` — Write everything in English except the body of decision records
@@ -14,6 +14,7 @@
 > Also applies here: `no-third-party-connectors`
 
 ## cli
+- `lookup-stops-at-repo-root` — Stop the .lore/ lookup at the git repo root, never crossing into another repo
 - `plain-cli-no-ink` — Build the CLI on parseArgs, with no Ink, React or CLI framework
 - `startup-budget` — Keep the store, the schema, zod and yaml off the startup path
 

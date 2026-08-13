@@ -1,10 +1,17 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join, relative } from "node:path";
 import { EXIT_ERROR, EXIT_OK, parseCommandArgs, type CommandContext } from "./context.js";
 import { injectBlock } from "../lib/claude-block.js";
 import { CONFIG_FILE, DEFAULT_CONFIG } from "../lib/config.js";
 import { renderIndex } from "../lib/index-file.js";
-import { findLoreDir, loadStore, INBOX_DIR, INDEX_FILE, LORE_DIR } from "../lib/store.js";
+import {
+	findLoreDir,
+	findLoreDirOutsideRepo,
+	loadStore,
+	INBOX_DIR,
+	INDEX_FILE,
+	LORE_DIR,
+} from "../lib/store.js";
 
 const LORE_README = `# .lore/
 
@@ -29,13 +36,15 @@ Format reference: https://github.com/minex-labs/lore#readme
 export default async function init(ctx: CommandContext): Promise<number> {
 	const args = parseCommandArgs(ctx.argv, {
 		"no-claude-md": { type: "boolean", default: false },
+		local: { type: "boolean", default: false },
 	});
 	if (!args.ok) {
 		ctx.io.err(`lore init: ${args.message}\n`);
 		return EXIT_ERROR;
 	}
 
-	const existing = findLoreDir(ctx.cwd);
+	// --local ignores a `.lore/` further up, for a package that wants its own.
+	const existing = args.parsed.values["local"] === true ? undefined : findLoreDir(ctx.cwd);
 	const root = existing ? existing.slice(0, -(LORE_DIR.length + 1)) : ctx.cwd;
 	const loreDir = join(root, LORE_DIR);
 	const done: string[] = [];
@@ -81,11 +90,27 @@ export default async function init(ctx: CommandContext): Promise<number> {
 
 	for (const entry of done) ctx.io.out(`  wrote  ${entry}\n`);
 	for (const entry of kept) ctx.io.out(`   kept  ${entry}\n`);
-	ctx.io.out(
-		existing
-			? "\nlore is already set up here; refreshed what is generated.\n"
-			: "\nlore is set up. Record the first decision with `lore add`.\n",
-	);
+
+	// Say where things landed when that is not the directory the user is in.
+	// "already set up here" while the files live somewhere else is the kind of
+	// half-truth that only shows up much later, as a decision written to the
+	// wrong repo.
+	const where = relative(ctx.cwd, root) || ".";
+	if (existing && where !== ".") {
+		ctx.io.out(`\nlore is already set up at ${where}/ (same repo); refreshed what is generated.\n`);
+	} else if (existing) {
+		ctx.io.out("\nlore is already set up here; refreshed what is generated.\n");
+	} else {
+		ctx.io.out("\nlore is set up. Record the first decision with `lore add`.\n");
+	}
+
+	const outside = findLoreDirOutsideRepo(ctx.cwd);
+	if (outside) {
+		ctx.io.out(
+			`\nNote: there is another .lore/ at ${relative(ctx.cwd, dirname(outside)) || "."}/, in a different git repo.\n` +
+				"It is not read from here, and nothing written here goes there.\n",
+		);
+	}
 	return EXIT_OK;
 }
 

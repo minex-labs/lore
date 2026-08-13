@@ -76,6 +76,23 @@ decision that replaced it, which is exactly where `lore supersede` puts it.
 it. It follows grep's exit convention and prints nothing on a miss, so it can back
 a `PreToolUse` hook without drowning you in output.
 
+## Where lore looks for `.lore/`
+
+It walks up from the current directory and **stops at the root of the git repo**.
+
+That means a package inside a monorepo finds the `.lore/` at the repo root, which
+is the point — but a repo nested inside another repo never sees, or writes into,
+the outer one's lore. A decision recorded while standing in a nested repo would
+otherwise be versioned in a repo that does not govern it and may not even be
+cloned alongside it.
+
+Worktrees and submodules are handled: in both, `.git` is a file rather than a
+directory, and both count as their own repo root.
+
+If a nearby `.lore/` is outside the boundary, commands say so rather than pretend
+it does not exist. `lore init --local` creates a `.lore/` in the current directory
+even when the repo root already has one.
+
 ## Commands
 
 ```

@@ -33,7 +33,7 @@ export const COMMANDS: Command[] = [
 	{
 		name: "init",
 		summary: "Set up .lore/ in this repo and wire the block into CLAUDE.md",
-		usage: "lore init [--no-claude-md]",
+		usage: "lore init [--local] [--no-claude-md]",
 		load: () => import("./init.js"),
 	},
 	{
