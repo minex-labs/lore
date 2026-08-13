@@ -7,6 +7,7 @@ export type CommandName =
 	| "init"
 	| "add"
 	| "amend"
+	| "area"
 	| "list"
 	| "show"
 	| "for"
@@ -49,6 +50,12 @@ export const COMMANDS: Command[] = [
 		summary: "Fix a decision without deciding again — why, scope, paths, source",
 		usage: "lore amend <id> [--json] [--scope a,b] [--paths x,y] [--source ...]",
 		load: () => import("./amend.js"),
+	},
+	{
+		name: "area",
+		summary: "List the declared areas, or declare one",
+		usage: 'lore area [<name> --desc "one line"]',
+		load: () => import("./area.js"),
 	},
 	{
 		name: "list",

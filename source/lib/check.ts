@@ -188,7 +188,7 @@ function checkBudget(store: Store, config: Config): Finding[] {
 			where: `${GLOBAL_AREA}/ + ${INDEX_FILE}`,
 			message:
 				`${total} chars (~${Math.round(total / 4)} tokens) are read on every session, over the ${config.budget.always_read} budget. ` +
-				`Heaviest: ${heaviest}. Move what is not truly global to an area — a long decision in a niche area is only read by whoever touches it`,
+				`Heaviest: ${heaviest}. Move what is not truly global to an area — \`lore area <name> --desc "..."\`, then \`lore amend <id> --scope <name>\`. A long decision in a niche area is only read by whoever touches it`,
 		});
 	}
 

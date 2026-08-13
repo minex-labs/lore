@@ -2,7 +2,7 @@
 
 # Lore index
 
-14 active decisions. Open the full file at `.lore/*/<id>.md`.
+16 active decisions. Open the full file at `.lore/*/<id>.md`.
 
 ## global  (always read)
 - `mixed-language-by-field` — Write everything in English except the body of decision records
@@ -15,8 +15,10 @@
 
 ## cli
 - `amend-freezes-identity` — Let amend change context, never identity
+- `config-needs-a-command-too` — Give config.yml a command, because the no-hand-editing rule is aimed at agents
 - `lookup-stops-at-repo-root` — Stop the .lore/ lookup at the git repo root, never crossing into another repo
 - `plain-cli-no-ink` — Build the CLI on parseArgs, with no Ink, React or CLI framework
+- `reads-validate-their-filters` — Refuse an unknown filter value on read commands, never answer with an empty list
 - `size-is-reported-never-enforced` — Report decision size as info, never fail a build on it
 - `startup-budget` — Keep the store, the schema, zod and yaml off the startup path
 

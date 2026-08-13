@@ -116,6 +116,7 @@ lore init                      set up .lore/ and wire the block into CLAUDE.md
 lore add                       record a decision, interactively
 lore add --json                …or from an object on stdin (this is the agent's door)
 lore amend <id>                fix a decision without deciding again
+lore area                      list the declared areas, or declare one
 lore list [--scope] [--status] see what is there
 lore show <id>                 print one decision
 lore for <path>                which decisions govern this file
@@ -174,6 +175,28 @@ Three ways, in descending order of quality:
    costs one keystroke; a wrong entry in the lore misleads every agent after it.
 3. **`lore harvest`** — recovers decisions from old sessions, PR descriptions,
    Notion pages, Slack threads. Also lands in the inbox.
+
+### Areas
+
+Areas are declared in `.lore/config.yml`, not inferred from directory names: free
+text scopes rot into `auth`, `authentication` and `Auth`, and an agent reading the
+index cannot tell those are the same thing.
+
+```
+lore area                                 what exists, and how much each holds
+lore area guards --desc "The lint guards" declare a new one
+```
+
+The description earns its place — it is what lets an agent map a ticket onto an
+area without guessing, so write it for someone who does not know the codebase.
+
+`lore area` exists because "never write files under `.lore/` by hand" is a rule
+aimed at agents, and it is agents who follow `lore check`'s advice to move a
+decision out of `global`. Without a command, that advice ends in a step they are
+not allowed to take.
+
+Asking to list an area nobody declared is an error, not an empty list — a typo and
+an empty area would otherwise look identical.
 
 ### Amending versus superseding
 
