@@ -50,7 +50,14 @@ export default async function update(ctx: CommandContext): Promise<number> {
 	}
 
 	if (!isNewerVersion(current, latest)) {
-		ctx.io.out(`lore ${current} is the latest version.\n`);
+		// Running from a clone puts you ahead of what is published. Saying "you are
+		// on the latest" there is true and misleading at once, and this tool spends
+		// a lot of effort not doing that.
+		ctx.io.out(
+			isNewerVersion(latest, current)
+				? `lore ${current} is ahead of the published ${latest} — nothing to update.\n`
+				: `lore ${current} is the latest version.\n`,
+		);
 		return EXIT_OK;
 	}
 

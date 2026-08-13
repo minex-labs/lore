@@ -25,3 +25,23 @@ test("a prerelease suffix does not confuse the comparison", () => {
 test("it updates the scoped package, not a guess at the bare name", () => {
 	assert.equal(PACKAGE_NAME, "@minex-labs/lore");
 });
+
+test("running ahead of the published version says so, instead of 'you are up to date'", async () => {
+	const { default: update } = await import("../source/commands/update.js");
+	const out: string[] = [];
+	const io = { out: (t: string) => out.push(t), err: (t: string) => out.push(t) };
+
+	// The registry is stubbed: this asserts the wording, not the network.
+	const original = globalThis.fetch;
+	globalThis.fetch = (async () =>
+		new Response(JSON.stringify({ version: "0.0.1" }), {
+			headers: { "content-type": "application/json" },
+		})) as typeof fetch;
+	try {
+		const code = await update({ argv: ["--check"], io, cwd: process.cwd() });
+		assert.equal(code, 0, "being ahead is not an update being available");
+		assert.match(out.join(""), /ahead of the published 0\.0\.1/);
+	} finally {
+		globalThis.fetch = original;
+	}
+});
