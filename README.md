@@ -126,7 +126,14 @@ lore revoke <id>               retire one with no replacement — by recording t
 lore check [--strict]          validate; wire into CI or a pre-commit hook
 lore harvest <file...>         turn past discussions into proposals
 lore review                    approve or discard proposals, one screen each
+lore update                    update lore itself from npm
 ```
+
+`lore update` is the only command that touches the network, and only when you type
+it. There is no version check on startup: `lore for` runs on every edit a hook
+sees, and a registry probe on that path would cost more than the command does.
+`lore update --check` reports without installing, and exits 1 when an update is
+available so a script can branch on it.
 
 ## What it costs to read
 

@@ -15,7 +15,8 @@ export type CommandName =
 	| "revoke"
 	| "check"
 	| "harvest"
-	| "review";
+	| "review"
+	| "update";
 
 export type Command = {
 	name: CommandName;
@@ -102,6 +103,12 @@ export const COMMANDS: Command[] = [
 		summary: "Approve or discard proposed decisions, one by one",
 		usage: "lore review [--all] [--list]",
 		load: () => import("./review.js"),
+	},
+	{
+		name: "update",
+		summary: "Update lore itself from npm",
+		usage: "lore update [--check]",
+		load: () => import("./update.js"),
 	},
 ];
 
