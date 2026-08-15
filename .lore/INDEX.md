@@ -2,7 +2,7 @@
 
 # Lore index
 
-16 active decisions. Open the full file at `.lore/*/<id>.md`.
+18 active decisions. Open the full file at `.lore/*/<id>.md`.
 
 ## global  (always read)
 - `mixed-language-by-field` — Write everything in English except the body of decision records
@@ -21,6 +21,7 @@
 - `reads-validate-their-filters` — Refuse an unknown filter value on read commands, never answer with an empty list
 - `size-is-reported-never-enforced` — Report decision size as info, never fail a build on it
 - `startup-budget` — Keep the store, the schema, zod and yaml off the startup path
+- `unreadable-is-not-empty` — Make a file that cannot be parsed a loud error, never a silent skip
 
 ## format
 - `always-read-is-the-budget-that-matters` — Budget the always-read context, not just individual decisions
@@ -28,3 +29,4 @@
 - `index-active-only` — List only active decisions in INDEX.md, one line each
 - `slug-ids-no-dates` — Identify decisions by slug alone, with no date prefix
 - `two-statuses-no-revoked` — Allow only active and superseded; retiring something is itself a decision
+- `writer-and-parser-must-agree` — Never let line wrapping decide whether lore can read its own file

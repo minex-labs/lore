@@ -59,9 +59,11 @@ prose silently is worse than refusing the file.
   lore gets reviewed. Lists, quotes, headings and fenced code pass through
   untouched, because reflowing those would corrupt them.
 - **`## Rejected`** is a bullet list and nothing else, one entry per discarded
-  option, in the form `- **Option** — reason`. An indented line continues the
-  reason above it. An entry with no reason is refused: the reason is the part that
-  stops the option being proposed again.
+  option, in the form `- **Option** — reason`. An entry may span lines: the parser
+  folds a bullet and its continuation lines into one before reading it, so how the
+  text happens to be wrapped can never decide whether an entry is readable. An
+  entry with no reason is refused: the reason is the part that stops the option
+  being proposed again.
 
 At least one rejected entry is mandatory. A record with nothing turned down is a
 description of the code, and the code already says it.
@@ -80,8 +82,10 @@ has a second reason, add it to the entry that already exists.
   literally. One source of truth, nobody re-summarises anything.
 - The two headings are fixed, so `lore add` can refuse an empty `## Rejected` and
   `lore supersede` can read individual options back out.
-- Bullets wrap at 96 columns with a two-space hang, so a decision reads as a normal
-  markdown list in a PR diff instead of one 400-character line.
+- Bullet reasons wrap at 96 columns with a two-space hang, so a decision reads as a
+  normal markdown list in a PR diff instead of one 400-character line. The head —
+  `- **Option** —` — is never wrapped, however long the option is: a long first
+  line is a cosmetic cost, and a file the tool cannot read back is not.
 - Serializing is a fixed point: parse → serialize → parse returns identical bytes,
   which is what lets `lore check` tell "not canonical" apart from "not valid".
 

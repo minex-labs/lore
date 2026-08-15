@@ -135,37 +135,66 @@ function splitBody(body: string, issues: Issue[]): Sections | undefined {
 	return { why, rejected };
 }
 
-function parseRejected(lines: string[], issues: Issue[]): Rejected[] {
-	const rejected: Rejected[] = [];
-	let open: Rejected | undefined;
+/**
+ * Fold the section into one logical entry per bullet before matching.
+ *
+ * A bullet may span lines — the writer wraps long reasons, and older files (from
+ * before the writer kept the head whole) have the `**bold**` itself split. Joining
+ * first means the shape of the wrap cannot change whether an entry is readable,
+ * which is exactly the bug this replaced: files lore wrote, lore could not read.
+ *
+ * Only the lines of `## Rejected` are joined. That matters: a regex run over the
+ * whole file to reunite split bold also matches `paths: ["**"]` in the frontmatter
+ * and corrupts the YAML.
+ */
+function foldEntries(lines: string[]): { text: string; raw: string }[] {
+	const entries: { text: string; raw: string }[] = [];
+	let current: string[] | undefined;
+
+	const flush = () => {
+		if (current && current.length > 0) {
+			entries.push({ text: current.join(" ").replace(/\s+/g, " ").trim(), raw: current[0]! });
+		}
+		current = undefined;
+	};
 
 	for (const line of lines) {
 		if (line === undefined) continue;
-		const match = BULLET.exec(line);
-		if (match) {
-			open = { option: match[1]!.trim(), reason: (match[2] ?? "").trim() };
-			rejected.push(open);
+		if (/^-(\s|$)/.test(line.trimStart()) && !line.startsWith("  ")) {
+			flush();
+			current = [line.trim()];
 			continue;
 		}
 		if (line.trim() === "") {
-			open = undefined;
+			flush();
 			continue;
 		}
-		if (line.trimStart().startsWith("- ")) {
+		if (current) current.push(line.trim());
+		else entries.push({ text: line.trim(), raw: line.trim() });
+	}
+	flush();
+	return entries;
+}
+
+function parseRejected(lines: string[], issues: Issue[]): Rejected[] {
+	const rejected: Rejected[] = [];
+
+	for (const entry of foldEntries(lines)) {
+		const match = BULLET.exec(entry.text);
+		if (match) {
+			rejected.push({ option: match[1]!.trim(), reason: (match[2] ?? "").trim() });
+			continue;
+		}
+		if (/^-(\s|$)/.test(entry.text)) {
 			issues.push({
 				field: "## Rejected",
-				message: `entry "${line.trim().slice(0, 40)}" must name the option in bold: - **Option** — reason`,
+				message: `entry "${entry.raw.slice(0, 40)}" must name the option in bold: - **Option** — reason`,
 			});
-			open = undefined;
-			continue;
-		}
-		if (open) {
-			open.reason = `${open.reason} ${line.trim()}`.trim();
 			continue;
 		}
 		issues.push({
 			field: "## Rejected",
-			message: `stray text "${line.trim().slice(0, 40)}" — the section is a bullet list and nothing else`,
+			message: `stray text "${entry.text.slice(0, 40)}" — the section is a bullet list and nothing else`,
 		});
 	}
 
@@ -211,7 +240,7 @@ export function serializeDecision(decision: Decision): string {
 		if (YAML.isSeq(node)) node.flow = true;
 	}
 
-	const bullets = rejected.map((entry) => wrapBullet(`- **${entry.option}** — ${entry.reason}`));
+	const bullets = rejected.map((entry) => wrapBullet(entry.option, entry.reason));
 
 	return [
 		"---",
@@ -271,9 +300,39 @@ function wrapProse(text: string): string {
 	return out.join("\n");
 }
 
-/** Wrap a bullet at WRAP_WIDTH with a two-space hang, so PR diffs stay readable. */
-function wrapBullet(text: string): string {
-	return wrapWords(text, WRAP_WIDTH, "  ");
+/**
+ * Wrap a rejected entry, keeping `- **Option** —` whole on the first line.
+ *
+ * The generic word wrap used to run over the whole bullet, which split `**…**`
+ * across lines — and for an option with no spaces to break on, left the hyphen
+ * alone on its own line. Either way the file no longer matched the parser that
+ * wrote it, and `lore review` skipped it in silence.
+ *
+ * So the head is never wrapped, however long the option is: a long first line is
+ * a cosmetic cost, a file the tool cannot read back is not.
+ */
+function wrapBullet(option: string, reason: string): string {
+	const head = `- **${option}** —`;
+	const lines: string[] = [];
+	let current = head;
+
+	for (const word of reason.split(/\s+/).filter(Boolean)) {
+		const candidate = `${current} ${word}`;
+		const limit = lines.length === 0 ? WRAP_WIDTH : WRAP_WIDTH - 2;
+		if (candidate.length > limit && current !== head) {
+			lines.push(current);
+			current = word;
+		} else if (candidate.length > limit && current === head) {
+			// The head alone fills the line; the reason starts on the next one. The
+			// parser reads that as a continuation, so the entry still round-trips.
+			lines.push(current);
+			current = word;
+		} else {
+			current = candidate;
+		}
+	}
+	if (current) lines.push(current);
+	return lines.map((line, index) => (index === 0 ? line : `  ${line}`)).join("\n");
 }
 
 /** Greedy wrap with a hanging indent. Idempotent, so serializing stays a fixed point. */

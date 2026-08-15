@@ -3,8 +3,9 @@ import { join } from "node:path";
 import picomatch from "picomatch";
 import { declaredAreas, loadConfig, type Config } from "./config.js";
 import { renderIndex } from "./index-file.js";
+import { parseDecision } from "./decision.js";
 import { GLOBAL_AREA } from "./schema.js";
-import { INDEX_FILE, type Store } from "./store.js";
+import { INBOX_DIR, INDEX_FILE, type Store } from "./store.js";
 import { inboxIds } from "./write.js";
 
 export type Severity = "error" | "warning" | "info";
@@ -105,15 +106,60 @@ export function check(store: Store): Finding[] {
 	findings.push(...checkPaths(store));
 	findings.push(...checkBudget(store, config));
 
+	findings.push(...checkInbox(store));
+
+	return findings;
+}
+
+/**
+ * Count the inbox the way `check` does, and the way `review` does, and make the
+ * two numbers meet.
+ *
+ * They used to be independent measurements of the same fact that never faced each
+ * other: `check` globbed the directory, `review` parsed and dropped what it could
+ * not read, and both exited 0. An operator saw "4 proposals are waiting", `review`
+ * offered 2, and nothing anywhere said the other 2 could never be promoted.
+ *
+ * A file that cannot be parsed is an error, not a note. It is not "nothing to do"
+ * and it is not a style preference — it is a decision someone recorded, sitting in
+ * the repo, that no command can act on.
+ */
+function checkInbox(store: Store): Finding[] {
+	const findings: Finding[] = [];
 	const pending = inboxIds(store.loreDir);
-	if (pending.length > 0) {
+	if (pending.length === 0) return findings;
+
+	let readable = 0;
+	for (const id of pending) {
+		const path = join(store.loreDir, INBOX_DIR, `${id}.md`);
+		let parsed;
+		try {
+			parsed = parseDecision(readFileSync(path, "utf8"));
+		} catch {
+			parsed = undefined;
+		}
+		if (parsed?.ok) {
+			readable += 1;
+			continue;
+		}
 		findings.push({
-			severity: "info",
-			where: "inbox/",
-			message: `${pending.length} ${pending.length === 1 ? "proposal is" : "proposals are"} waiting for \`lore review\``,
+			severity: "error",
+			where: `${INBOX_DIR}/${id}.md`,
+			message: `cannot be parsed, so \`lore review\` skips it and it can never be approved — ${
+				parsed && !parsed.ok
+					? `${parsed.issues[0]?.field}: ${parsed.issues[0]?.message}`
+					: "unreadable"
+			}`,
 		});
 	}
 
+	if (readable > 0) {
+		findings.push({
+			severity: "info",
+			where: `${INBOX_DIR}/`,
+			message: `${readable} ${readable === 1 ? "proposal is" : "proposals are"} waiting for \`lore review\``,
+		});
+	}
 	return findings;
 }
 

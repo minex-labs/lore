@@ -14,6 +14,7 @@ import { INBOX_DIR, type Store } from "../lib/store.js";
 import { inboxIds, refreshIndex } from "../lib/write.js";
 
 type Proposal = { id: string; path: string; decision: Decision; raw: string };
+type Unreadable = { id: string; issues: string[] };
 
 export default async function review(ctx: CommandContext): Promise<number> {
 	const args = parseCommandArgs(ctx.argv, {
@@ -29,8 +30,13 @@ export default async function review(ctx: CommandContext): Promise<number> {
 	if (!loaded.ok) return EXIT_ERROR;
 	const store = loaded.store;
 
-	const proposals = readInbox(store);
+	const { proposals, unreadable } = readInbox(store);
+	reportUnreadable(ctx, unreadable);
+
 	if (proposals.length === 0) {
+		// An inbox holding only unreadable files is not an empty inbox, and must not
+		// exit like one.
+		if (unreadable.length > 0) return EXIT_NO_MATCH;
 		ctx.io.out("Nothing waiting for review.\n");
 		return EXIT_OK;
 	}
@@ -66,16 +72,38 @@ export default async function review(ctx: CommandContext): Promise<number> {
 /**
  * Read the inbox directly. The store loader cannot see it — that is what keeps a
  * proposal out of the index — so this is the one place that goes looking.
+ *
+ * Files that do not parse come back separately instead of being dropped. Silently
+ * skipping them made an unreadable proposal indistinguishable from an empty inbox:
+ * three states collapsed into two, and the comfortable one won.
  */
-function readInbox(store: Store): Proposal[] {
+function readInbox(store: Store): { proposals: Proposal[]; unreadable: Unreadable[] } {
 	const proposals: Proposal[] = [];
+	const unreadable: Unreadable[] = [];
 	for (const id of inboxIds(store.loreDir)) {
 		const path = join(store.loreDir, INBOX_DIR, `${id}.md`);
 		const raw = readFileSync(path, "utf8");
 		const parsed = parseDecision(raw);
 		if (parsed.ok) proposals.push({ id, path, decision: parsed.decision, raw });
+		else
+			unreadable.push({
+				id,
+				issues: parsed.issues.map((issue) => `${issue.field}: ${issue.message}`),
+			});
 	}
-	return proposals;
+	return { proposals, unreadable };
+}
+
+function reportUnreadable(ctx: CommandContext, unreadable: Unreadable[]): void {
+	if (unreadable.length === 0) return;
+	const count = unreadable.length;
+	ctx.io.err(
+		`lore review: ${count} ${count === 1 ? "proposal" : "proposals"} in the inbox cannot be read and ${count === 1 ? "was" : "were"} skipped:\n`,
+	);
+	for (const entry of unreadable) {
+		ctx.io.err(`  ${entry.id}: ${entry.issues[0] ?? "unparseable"}\n`);
+	}
+	ctx.io.err("Fix the file, or delete it — it can never be approved as it stands.\n");
 }
 
 function approve(store: Store, proposal: Proposal): string {
