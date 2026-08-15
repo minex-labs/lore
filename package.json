@@ -1,6 +1,6 @@
 {
 	"name": "@minex-labs/lore",
-	"version": "0.6.0",
+	"version": "0.7.0",
 	"description": "Curated, versioned decision records that coding agents actually read before touching your code.",
 	"license": "MIT",
 	"author": "Martin Mineo <martinmineo@gmail.com>",
