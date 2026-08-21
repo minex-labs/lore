@@ -17,6 +17,14 @@ export const GLOBAL_BUDGET = 10;
 /** Name the worst few; summarise the tail. A wall of size notes is read as noise. */
 const WORST_SHOWN = 3;
 
+/** Past this the walk has stopped being cheap; what it costs is a truthful answer. */
+export const FILE_SCAN_LIMIT = 20000;
+
+export type CheckOptions = {
+	/** Files to visit before giving up on the paths check. Lowered by tests. */
+	fileScanLimit?: number;
+};
+
 const IGNORED_DIRS = new Set([
 	".git",
 	"node_modules",
@@ -36,7 +44,7 @@ const IGNORED_DIRS = new Set([
  * flight: a glob that no longer matches anything would block every legitimate
  * file move if it failed the build, so it takes `--strict` to make it fatal.
  */
-export function check(store: Store): Finding[] {
+export function check(store: Store, options: CheckOptions = {}): Finding[] {
 	const findings: Finding[] = [];
 
 	for (const problem of store.problems) {
@@ -103,7 +111,7 @@ export function check(store: Store): Finding[] {
 		});
 	}
 
-	findings.push(...checkPaths(store));
+	findings.push(...checkPaths(store, options.fileScanLimit ?? FILE_SCAN_LIMIT));
 	findings.push(...checkBudget(store, config));
 
 	findings.push(...checkInbox(store));
@@ -249,40 +257,72 @@ function fileSize(path: string): number {
 	}
 }
 
-/** Globs that match nothing usually mean the code moved and the decision did not. */
-function checkPaths(store: Store): Finding[] {
-	const withPaths = store.decisions.filter(
-		(loaded) =>
-			loaded.decision.frontmatter.status === "active" && loaded.decision.frontmatter.paths?.length,
-	);
-	if (withPaths.length === 0) return [];
+/**
+ * Globs that match nothing usually mean the code moved and the decision did not.
+ *
+ * The walk is budgeted, so this question has three answers, not two: matched, did not
+ * match, and "the scan ran out of budget before it could tell". Collapsing the third
+ * into the second is how a partial walk turns into a confident claim about a file that
+ * is sitting right there.
+ */
+function checkPaths(store: Store, limit: number): Finding[] {
+	const globs = store.decisions
+		.filter((loaded) => loaded.decision.frontmatter.status === "active")
+		.flatMap((loaded) =>
+			(loaded.decision.frontmatter.paths ?? []).map((glob) => ({
+				file: loaded.file,
+				glob,
+				isMatch: picomatch(glob, { dot: true }),
+			})),
+		);
+	if (globs.length === 0) return [];
 
-	const files = listRepoFiles(store.root);
-	const findings: Finding[] = [];
-	for (const loaded of withPaths) {
-		for (const glob of loaded.decision.frontmatter.paths ?? []) {
-			const matches = picomatch(glob, { dot: true });
-			if (!files.some((file) => matches(file))) {
-				findings.push({
-					severity: "warning",
-					where: loaded.file,
-					message: `paths glob "${glob}" matches no file in the repo`,
-				});
-			}
-		}
+	// Stop the moment every glob has matched: the full walk is only needed to prove a
+	// negative, which is exactly the case where a truncated answer would be a lie.
+	let unmatched = globs;
+	const complete = walkRepo(store.root, limit, (file) => {
+		unmatched = unmatched.filter((entry) => !entry.isMatch(file));
+		return unmatched.length === 0;
+	});
+
+	if (unmatched.length === 0) return [];
+	if (!complete) {
+		const listed = unmatched.map((entry) => `"${entry.glob}"`).join(", ");
+		return [
+			{
+				severity: "warning",
+				where: "repo scan",
+				message:
+					`stopped after ${limit} files with directories left to visit, so ${unmatched.length} paths glob(s) could not be checked: ${listed}. ` +
+					`They may well match — this is "not measured", not "not there". A large directory that is not this repo's source is the usual cause`,
+			},
+		];
 	}
-	return findings;
+	return unmatched.map((entry) => ({
+		severity: "warning" as const,
+		where: entry.file,
+		message: `paths glob "${entry.glob}" matches no file in the repo`,
+	}));
 }
 
 /**
  * Walk the repo without shelling out to git: one less thing that has to exist for
  * `lore check` to work, and it behaves the same in a tarball as in a clone.
+ *
+ * A directory carrying its own `.git` is a different repo — a submodule, or a worktree
+ * some tool parked inside this one. Its files are not this repo's files, and walking
+ * them is how the budget gets spent on someone else's tree. Same boundary the `.lore/`
+ * lookup already stops at.
+ *
+ * `onFile` returns true to stop the walk. Returns false when the budget ran out with
+ * directories still unvisited: the caller holds a partial answer and must say so.
  */
-function listRepoFiles(root: string, limit = 20000): string[] {
-	const files: string[] = [];
+function walkRepo(root: string, limit: number, onFile: (file: string) => boolean): boolean {
 	const stack: string[] = [""];
+	let seen = 0;
 
-	while (stack.length > 0 && files.length < limit) {
+	while (stack.length > 0) {
+		if (seen >= limit) return false;
 		const relative = stack.pop()!;
 		let entries;
 		try {
@@ -290,14 +330,16 @@ function listRepoFiles(root: string, limit = 20000): string[] {
 		} catch {
 			continue;
 		}
+		if (relative !== "" && entries.some((entry) => entry.name === ".git")) continue;
 		for (const entry of entries) {
 			const path = relative ? `${relative}/${entry.name}` : entry.name;
 			if (entry.isDirectory()) {
 				if (!IGNORED_DIRS.has(entry.name)) stack.push(path);
 			} else if (entry.isFile()) {
-				files.push(path);
+				seen += 1;
+				if (onFile(path)) return true;
 			}
 		}
 	}
-	return files;
+	return true;
 }

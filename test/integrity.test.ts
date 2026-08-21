@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { invoke, makeRepo, type Fixture } from "./helpers.js";
+import { check } from "../source/lib/check.js";
+import { loadStore } from "../source/lib/store.js";
 
 const REPO: Record<string, Fixture> = {
 	"rest-with-openapi": { what: "Expose the API as REST with an OpenAPI spec", scope: ["api"] },
@@ -232,3 +234,46 @@ async function invokeWithStdin(root: string, argv: string[], payload: unknown) {
 		if (original) Object.defineProperty(process, "stdin", original);
 	}
 }
+
+test("a glob the scan never reached is reported as unmeasured, not as dead", async () => {
+	const root = await setup({
+		...REPO,
+		"raw-sql-no-orm": { what: "Write SQL by hand, no ORM", scope: ["backend"], paths: ["late/**"] },
+	});
+	for (const name of ["a.ts", "b.ts", "c.ts"]) writeFileSync(join(root, name), "", "utf8");
+	mkdirSync(join(root, "late"), { recursive: true });
+	writeFileSync(join(root, "late/db.ts"), "", "utf8");
+
+	const store = loadStore(join(root, ".lore"));
+
+	const whole = check(store);
+	assert.deepEqual(whole, [], "the glob does match, and a complete walk finds it");
+
+	const partial = check(store, { fileScanLimit: 2 });
+	assert.equal(partial.length, 1);
+	assert.equal(partial[0]?.severity, "warning");
+	assert.match(partial[0]?.message ?? "", /could not be checked: "late\/\*\*"/);
+	assert.doesNotMatch(
+		partial[0]?.message ?? "",
+		/matches no file/,
+		"a walk that stopped early must not claim the file is gone",
+	);
+});
+
+test("a directory with its own .git is another repo, and its files are not counted", async () => {
+	const root = await setup({
+		...REPO,
+		"raw-sql-no-orm": {
+			what: "Write SQL by hand, no ORM",
+			scope: ["backend"],
+			paths: ["vendor/**"],
+		},
+	});
+	mkdirSync(join(root, "vendor"), { recursive: true });
+	writeFileSync(join(root, "vendor/.git"), "gitdir: /elsewhere/.git/worktrees/vendor\n", "utf8");
+	writeFileSync(join(root, "vendor/db.ts"), "", "utf8");
+
+	const findings = check(loadStore(join(root, ".lore")));
+	assert.equal(findings.length, 1);
+	assert.match(findings[0]?.message ?? "", /matches no file in the repo/);
+});
