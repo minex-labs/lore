@@ -177,14 +177,21 @@ async function installLatest(prefix: string | undefined, version: string): Promi
 		return { ok: true };
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
-		const hint = hintFor(message, prefix);
+		const hint = hintFor(message, prefix, version);
 		return { ok: false, message, ...(hint ? { hint } : {}) };
 	}
 }
 
-/** The three failures people actually hit, each with the fix rather than a stack trace. */
-function hintFor(message: string, prefix: string | undefined): string | undefined {
+/** The failures people actually hit, each with the fix rather than a stack trace. */
+export function hintFor(
+	message: string,
+	prefix: string | undefined,
+	version: string,
+): string | undefined {
 	const lower = message.toLowerCase();
+	if (lower.includes("etarget") || lower.includes("no matching version")) {
+		return `The registry says ${version} is the latest, but npm cannot find it yet. Those are two caches, and the one npm reads is the slower of the pair, so a release a few minutes old can look missing. Wait a minute and run \`lore update\` again.`;
+	}
 	if (lower.includes("eacces") || lower.includes("permission denied")) {
 		const where = prefix ? `${prefix}` : "its global prefix";
 		return `npm could not write to ${where}. Fix the ownership of that directory (npm docs: 'resolving EACCES permissions errors'), or re-run with sudo.`;

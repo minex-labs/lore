@@ -5,6 +5,7 @@ import { join, sep } from "node:path";
 import { test } from "node:test";
 import { pathToFileURL } from "node:url";
 import {
+	hintFor,
 	installArgs,
 	installPrefix,
 	isNewerVersion,
@@ -127,4 +128,21 @@ test("npm exiting 0 is not an update: the version that answers is the one on the
 		globalThis.fetch = originalFetch;
 		process.env["PATH"] = originalPath ?? "";
 	}
+});
+
+test("a version the registry has and npm cannot see yet is explained, not dumped", () => {
+	const etarget =
+		"Command failed: npm install -g @minex-labs/lore@0.7.3\n" +
+		"npm error code ETARGET\n" +
+		"npm error notarget No matching version found for @minex-labs/lore@0.7.3.";
+
+	const hint = hintFor(etarget, "/opt/homebrew", "0.7.3");
+	assert.match(hint ?? "", /0\.7\.3 is the latest, but npm cannot find it yet/);
+	assert.match(hint ?? "", /Wait a minute/, "the fix is waiting, and it should say so");
+});
+
+test("the permission hint names the directory it could not write to", () => {
+	const eacces = "EACCES: permission denied, mkdir '/usr/local/lib/node_modules/@minex-labs'";
+	assert.match(hintFor(eacces, "/usr/local", "0.7.3") ?? "", /could not write to \/usr\/local/);
+	assert.match(hintFor(eacces, undefined, "0.7.3") ?? "", /could not write to its global prefix/);
 });
