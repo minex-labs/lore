@@ -74,14 +74,27 @@ test("running from a clone names no prefix, rather than guessing one", () => {
 });
 
 test("the install targets that prefix explicitly", () => {
-	assert.deepEqual(installArgs("/opt/homebrew"), [
+	assert.deepEqual(installArgs("/opt/homebrew", "1.2.3"), [
 		"install",
 		"-g",
 		"--prefix",
 		"/opt/homebrew",
-		`${PACKAGE_NAME}@latest`,
+		`${PACKAGE_NAME}@1.2.3`,
 	]);
-	assert.deepEqual(installArgs(undefined), ["install", "-g", `${PACKAGE_NAME}@latest`]);
+	assert.deepEqual(installArgs(undefined, "1.2.3"), ["install", "-g", `${PACKAGE_NAME}@1.2.3`]);
+});
+
+test("the install pins the version we resolved, never the @latest tag", () => {
+	// npm resolves a tag through its own cached packument, which can lag a publish by
+	// minutes. We already know the number, so asking npm to look it up again is a
+	// second answer to a question that was settled.
+	for (const args of [installArgs("/opt/homebrew", "1.2.3"), installArgs(undefined, "1.2.3")]) {
+		assert.ok(
+			args.includes(`${PACKAGE_NAME}@1.2.3`),
+			"the resolved version is what gets installed",
+		);
+		assert.ok(!args.some((arg) => arg.endsWith("@latest")), "the tag is never handed to npm");
+	}
 });
 
 test("npm exiting 0 is not an update: the version that answers is the one on the PATH", async () => {

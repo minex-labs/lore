@@ -71,8 +71,8 @@ export default async function update(ctx: CommandContext): Promise<number> {
 	}
 
 	const prefix = installPrefix(import.meta.url);
-	ctx.io.out(`Running ${["npm", ...installArgs(prefix)].join(" ")}…\n`);
-	const result = await installLatest(prefix);
+	ctx.io.out(`Running ${["npm", ...installArgs(prefix, latest)].join(" ")}…\n`);
+	const result = await installLatest(prefix, latest);
 	if (!result.ok) {
 		ctx.io.err(`lore update: ${result.message}\n`);
 		if (result.hint) ctx.io.err(`${result.hint}\n`);
@@ -84,10 +84,10 @@ export default async function update(ctx: CommandContext): Promise<number> {
 	const installed = getVersion();
 	if (installed !== latest) {
 		ctx.io.err(
-			`lore update: npm reported success, but the lore this command runs from is still ${installed}.\n` +
-				`It installed ${latest} into a prefix that is not the one on your PATH — usually two node installs, ` +
-				`each with its own global prefix. Run \`npm install -g --prefix <the prefix holding lore> ${PACKAGE_NAME}@latest\`, ` +
-				`or reinstall lore with the npm you want to keep.\n`,
+			`lore update: npm reported success, but the lore this command runs from is still ${installed}, not ${latest}.\n` +
+				`The install landed somewhere this binary is not loaded from. Two node installs, each with its own global ` +
+				`prefix, is the usual cause${prefix ? ` — this one targeted ${prefix}` : ""}. ` +
+				`Check \`which lore\` against \`npm prefix -g\`, and install into the prefix that holds lore.\n`,
 		);
 		return EXIT_ERROR;
 	}
@@ -118,9 +118,17 @@ export function installPrefix(moduleUrl: string): string | undefined {
 	return prefix.join(sep) || sep;
 }
 
-/** Named so the command can print the exact line it is about to run. */
-export function installArgs(prefix: string | undefined): string[] {
-	return ["install", "-g", ...(prefix ? ["--prefix", prefix] : []), `${PACKAGE_NAME}@latest`];
+/**
+ * Named so the command can print the exact line it is about to run.
+ *
+ * The version is pinned rather than left as `@latest`, because we already asked the
+ * registry which one that is. npm resolves the tag through its own cached packument,
+ * which can still be serving the previous release minutes after a publish — that
+ * installs an old build, exits 0, and makes this command argue with itself about a
+ * version it just looked up.
+ */
+export function installArgs(prefix: string | undefined, version: string): string[] {
+	return ["install", "-g", ...(prefix ? ["--prefix", prefix] : []), `${PACKAGE_NAME}@${version}`];
 }
 
 /** Ask npm what the latest published version is. Any failure answers null. */
@@ -163,9 +171,9 @@ export function isNewerVersion(current: string, latest: string): boolean {
 
 export type InstallResult = { ok: true } | { ok: false; message: string; hint?: string };
 
-async function installLatest(prefix: string | undefined): Promise<InstallResult> {
+async function installLatest(prefix: string | undefined, version: string): Promise<InstallResult> {
 	try {
-		await execFileAsync("npm", installArgs(prefix), { timeout: INSTALL_TIMEOUT_MS });
+		await execFileAsync("npm", installArgs(prefix, version), { timeout: INSTALL_TIMEOUT_MS });
 		return { ok: true };
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
