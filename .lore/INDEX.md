@@ -2,7 +2,7 @@
 
 # Lore index
 
-18 active decisions. Open the full file at `.lore/*/<id>.md`.
+19 active decisions. Open the full file at `.lore/*/<id>.md`.
 
 ## global  (always read)
 - `mixed-language-by-field` — Write everything in English except the body of decision records
@@ -22,6 +22,7 @@
 - `size-is-reported-never-enforced` — Report decision size as info, never fail a build on it
 - `startup-budget` — Keep the store, the schema, zod and yaml off the startup path
 - `unreadable-is-not-empty` — Make a file that cannot be parsed a loud error, never a silent skip
+- `walk-the-fs-not-git-ls-files` — List repo files by walking the filesystem, never by shelling out to git
 
 ## format
 - `always-read-is-the-budget-that-matters` — Budget the always-read context, not just individual decisions
